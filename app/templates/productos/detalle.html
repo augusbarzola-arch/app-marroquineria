@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}{{ producto.nombre_producto }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado con navegación y acciones -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="/productos" class="text-decoration-none">Productos</a> / Detalle #{{ producto.id_producto }}
+            </div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-box-seam text-primary me-2"></i>{{ producto.nombre_producto }}
+                {% if producto.sku %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle ms-2 fs-6 align-middle font-monospace">{{ producto.sku }}</span>
+                {% endif %}
+            </h3>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/productos" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Volver al Catálogo
+            </a>
+            <a href="/productos/{{ producto.id_producto }}/editar" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Editar Producto
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaVarianteModal">
+                <i class="bi bi-plus-lg me-1"></i> Agregar Variante
+            </button>
+        </div>
+    </div>
+
+    <!-- Ficha técnica y métricas -->
+    <div class="row g-3 mb-4">
+        <!-- Tarjeta de Detalles -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold card-title mb-3 text-secondary">Información del Producto</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <span class="text-muted d-block small">SKU:</span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle fs-6 mt-1 font-monospace">{{ producto.sku or 'S/D' }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block small">Categoría:</span>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border fs-6 mt-1">{{ producto.nombre_categoria }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted d-block small">Material:</span>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border fs-6 mt-1">{{ producto.nombre_material }}</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted d-block small">Descripción:</span>
+                            <p class="mb-0 mt-1 text-secondary">{{ producto.descripcion or 'Sin descripción especificada.' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Precios y Margen -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold card-title mb-3 text-secondary">Estructura Comercial</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Precio de Costo:</span>
+                        <span class="fw-semibold">${{ "%.2f"|format(producto.precio_costo) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Precio de Lista:</span>
+                        <span class="fw-bold text-success fs-5">${{ "%.2f"|format(producto.precio_lista) }}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Margen Estimado:</span>
+                        {% if margen_porcentaje >= 0 %}
+                        <span class="badge bg-success-subtle text-success-emphasis border px-2 py-1">+{{ margen_porcentaje }}%</span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger-emphasis border px-2 py-1">{{ margen_porcentaje }}% (Negativo)</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Stock Total Combinado:</span>
+                        <span class="badge bg-primary px-2 py-1 fs-6">{{ total_stock }} unidades</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Variantes -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Variantes de Color y Talle</h5>
+            <span class="text-muted small">Total: <strong>{{ total_variantes }}</strong> variantes configuradas</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID Var.</th>
+                        <th>Color</th>
+                        <th>Tamaño / Talle</th>
+                        <th class="text-center">Stock Actual</th>
+                        <th class="text-center">Stock Mínimo</th>
+                        <th class="text-center">Estado de Stock</th>
+                        <th class="text-end" style="width: 140px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in variantes %}
+                    <tr class="{% if v.stock_actual <= v.stock_minimo %}row-stock-critical{% elif v.stock_actual <= (v.stock_minimo * 1.5) %}row-stock-warning{% endif %}">
+                        <td class="text-muted fw-semibold">#{{ v.id_variante }}</td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border px-2 py-1">
+                                <i class="bi bi-circle-fill me-1 small"></i>{{ v.nombre_color }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary-emphasis border px-2 py-1">
+                                {{ v.nombre_tamano }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold fs-6">
+                            {{ v.stock_actual }}
+                        </td>
+                        <td class="text-center text-muted">
+                            {{ v.stock_minimo }}
+                        </td>
+                        <td class="text-center">
+                            {% if v.stock_actual <= v.stock_minimo %}
+                            <span class="badge bg-danger px-2 py-1">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Stock Bajo / Crítico
+                            </span>
+                            {% elif v.stock_actual <= (v.stock_minimo * 1.5) %}
+                            <span class="badge bg-warning px-2 py-1">
+                                <i class="bi bi-exclamation-circle me-1"></i> Reposición Cercana
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success-emphasis border px-2 py-1">
+                                <i class="bi bi-check-circle me-1"></i> Normal
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openEditVarianteModal({{ v.id_variante }}, {{ v.id_color }}, {{ v.id_tamano }}, {{ v.stock_actual }}, {{ v.stock_minimo }})" 
+                                    title="Editar variante">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteVariante({{ v.id_variante }}, '{{ v.nombre_color | e }} - {{ v.nombre_tamano | e }}')" 
+                                    title="Eliminar variante">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-boxes fs-2 d-block mb-2"></i>
+                            Este producto aún no tiene variantes registradas.<br>
+                            Haga clic en <strong>Agregar Variante</strong> para configurar colores y talles disponibles.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nueva Variante -->
+<div class="modal fade" id="nuevaVarianteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="nuevaVarianteForm" onsubmit="handleCreateVariante(event)">
+                <input type="hidden" name="id_producto" value="{{ producto.id_producto }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Agregar Nueva Variante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Color <span class="text-danger">*</span></label>
+                        <select name="id_color" class="form-select" required>
+                            <option value="">Seleccione color...</option>
+                            {% for c in colores %}
+                            <option value="{{ c.id_color }}">{{ c.nombre_color }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Si no aplica un color específico, use "Único".</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tamaño / Talle <span class="text-danger">*</span></label>
+                        <select name="id_tamano" class="form-select" required>
+                            <option value="">Seleccione tamaño...</option>
+                            {% for t in tamanos %}
+                            <option value="{{ t.id_tamano }}">{{ t.nombre_tamano }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Si no aplica un talle específico, use "Único".</div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Stock Inicial</label>
+                            <input type="number" min="0" name="stock_actual" class="form-control" value="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Stock Mínimo</label>
+                            <input type="number" min="0" name="stock_minimo" class="form-control" value="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveVariante">Guardar Variante</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Variante -->
+<div class="modal fade" id="editarVarianteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editarVarianteForm" onsubmit="handleUpdateVariante(event)">
+                <input type="hidden" id="edit_id_variante">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Editar Variante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Color <span class="text-danger">*</span></label>
+                        <select id="edit_id_color" class="form-select" required>
+                            {% for c in colores %}
+                            <option value="{{ c.id_color }}">{{ c.nombre_color }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tamaño / Talle <span class="text-danger">*</span></label>
+                        <select id="edit_id_tamano" class="form-select" required>
+                            {% for t in tamanos %}
+                            <option value="{{ t.id_tamano }}">{{ t.nombre_tamano }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Stock Actual</label>
+                            <input type="number" min="0" id="edit_stock_actual" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Stock Mínimo</label>
+                            <input type="number" min="0" id="edit_stock_minimo" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnEditVariante">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+async function handleCreateVariante(e) {
+    e.preventDefault();
+    const form = e.target;
+    const idProducto = form.id_producto.value;
+    const btn = document.getElementById('btnSaveVariante');
+    btn.disabled = true;
+
+    const data = {
+        id_producto: parseInt(idProducto),
+        id_color: parseInt(form.id_color.value),
+        id_tamano: parseInt(form.id_tamano.value),
+        stock_actual: parseInt(form.stock_actual.value),
+        stock_minimo: parseInt(form.stock_minimo.value)
+    };
+
+    try {
+        const res = await fetch(`/productos/${idProducto}/variantes`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al agregar la variante.');
+
+        window.location.href = `/productos/${idProducto}?msg=` + encodeURIComponent('Variante agregada correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function openEditVarianteModal(idVariante, idColor, idTamano, stockActual, stockMinimo) {
+    document.getElementById('edit_id_variante').value = idVariante;
+    document.getElementById('edit_id_color').value = idColor;
+    document.getElementById('edit_id_tamano').value = idTamano;
+    document.getElementById('edit_stock_actual').value = stockActual;
+    document.getElementById('edit_stock_minimo').value = stockMinimo;
+
+    const modal = new bootstrap.Modal(document.getElementById('editarVarianteModal'));
+    modal.show();
+}
+
+async function handleUpdateVariante(e) {
+    e.preventDefault();
+    const idProducto = {{ producto.id_producto }};
+    const idVariante = document.getElementById('edit_id_variante').value;
+    const btn = document.getElementById('btnEditVariante');
+    btn.disabled = true;
+
+    const data = {
+        id_color: parseInt(document.getElementById('edit_id_color').value),
+        id_tamano: parseInt(document.getElementById('edit_id_tamano').value),
+        stock_actual: parseInt(document.getElementById('edit_stock_actual').value),
+        stock_minimo: parseInt(document.getElementById('edit_stock_minimo').value)
+    };
+
+    try {
+        const res = await fetch(`/productos/${idProducto}/variantes/${idVariante}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al actualizar la variante.');
+
+        window.location.href = `/productos/${idProducto}?msg=` + encodeURIComponent('Variante actualizada correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function deleteVariante(idVariante, nombre) {
+    const idProducto = {{ producto.id_producto }};
+    confirmModal(
+        'Eliminar Variante',
+        `¿Está seguro de que desea eliminar la variante "${nombre}"?`,
+        async () => {
+            try {
+                const res = await fetch(`/productos/${idProducto}/variantes/${idVariante}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar la variante.');
+
+                window.location.href = `/productos/${idProducto}?msg=` + encodeURIComponent('Variante eliminada exitosamente.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}

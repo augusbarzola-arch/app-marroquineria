@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Compras{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Acción -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-truck text-primary me-2"></i>Historial de Compras</h3>
+            <p class="text-secondary mb-0">Registro histórico de recepciones de mercadería y compras a proveedores</p>
+        </div>
+        <a href="/compras/nueva" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Nueva Orden de Compra
+        </a>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/compras/historial" class="row g-2 align-items-center">
+                <!-- Fecha Desde -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ fecha_desde or '' }}">
+                </div>
+
+                <!-- Fecha Hasta -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ fecha_hasta or '' }}">
+                </div>
+
+                <!-- Proveedor -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Proveedor</label>
+                    <select name="id_proveedor" class="form-select form-select-sm">
+                        <option value="">Todos los proveedores</option>
+                        {% for prov in proveedores %}
+                        <option value="{{ prov.id_proveedor }}" {% if selected_proveedor == prov.id_proveedor %}selected{% endif %}>
+                            {{ prov.razon_social }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="col-md-3 d-flex align-items-end gap-1 mt-auto">
+                    <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+                    {% if fecha_desde or fecha_hasta or selected_proveedor %}
+                    <a href="/compras/historial" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    {% endif %}
+                    <div class="ms-auto text-end text-muted small">
+                        Total: <strong>{{ total }}</strong> compras
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Compras -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Nº Compra</th>
+                        <th>Fecha y Hora</th>
+                        <th>Proveedor</th>
+                        <th>CUIT</th>
+                        <th class="text-center">Ítems</th>
+                        <th class="text-center">Unidades</th>
+                        <th class="text-end">Monto Total</th>
+                        <th class="text-end" style="width: 100px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in compras %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ "%05d"|format(c.id_compra) }}</td>
+                        <td>
+                            <i class="bi bi-calendar-event me-1 text-muted"></i>
+                            {{ c.fecha_compra.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="fw-bold">{{ c.razon_social }}</td>
+                        <td><code>{{ c.cuit }}</code></td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border px-2">
+                                {{ c.cantidad_items }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-semibold">
+                            {{ c.unidades_totales }}
+                        </td>
+                        <td class="text-end fw-bold fs-6 text-primary">
+                            ${{ "%.2f"|format(c.monto_total) }}
+                        </td>
+                        <td class="text-end">
+                            <a href="/compras/{{ c.id_compra }}" class="btn btn-sm btn-outline-info" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-truck fs-2 d-block mb-2"></i>
+                            No se encontraron órdenes de compra registradas con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_proveedor %}&id_proveedor={{ selected_proveedor }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_proveedor %}&id_proveedor={{ selected_proveedor }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_proveedor %}&id_proveedor={{ selected_proveedor }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

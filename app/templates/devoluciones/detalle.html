@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Devolución #{{ devolucion.id_devolucion }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 850px;">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="/devoluciones/historial" class="text-decoration-none">Historial de Devoluciones</a> / Operación #{{ "%04d"|format(devolucion.id_devolucion) }}
+            </div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-arrow-left-right text-primary me-2"></i>Devolución #{{ "%04d"|format(devolucion.id_devolucion) }}
+            </h3>
+        </div>
+        <a href="/devoluciones/historial" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Historial
+        </a>
+    </div>
+
+    <!-- Ficha Principal -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                <div>
+                    <span class="text-muted small d-block">Fecha de Registro:</span>
+                    <strong class="fs-6">{{ devolucion.fecha.strftime('%d/%m/%Y %H:%M:%S') }}</strong>
+                </div>
+                <div>
+                    <span class="text-muted small d-block">Venta Asociada:</span>
+                    <a href="/ventas/{{ devolucion.id_venta }}" class="badge bg-secondary-subtle text-secondary-emphasis border text-decoration-none fs-6">
+                        Venta #{{ devolucion.id_venta }}
+                    </a>
+                </div>
+                <div>
+                    <span class="text-muted small d-block text-end">Motivo:</span>
+                    {% if devolucion.motivo == 'CAMBIO' %}
+                    <span class="badge bg-primary px-3 py-2 fs-6"><i class="bi bi-arrow-repeat me-1"></i> CAMBIO</span>
+                    {% elif devolucion.motivo == 'DEVOLUCION' %}
+                    <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-box-arrow-down-left me-1"></i> DEVOLUCIÓN</span>
+                    {% elif devolucion.motivo == 'REPARACION' %}
+                    <span class="badge bg-warning px-3 py-2 fs-6"><i class="bi bi-tools me-1"></i> REPARACIÓN</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detalle de Artículos Implicados -->
+            <div class="row g-3 my-2">
+                <!-- Artículo Devuelto -->
+                <div class="col-md-{% if devolucion.motivo == 'CAMBIO' %}6{% else %}12{% endif %}">
+                    <div class="p-3 border rounded h-100" style="background: var(--bg-surface);">
+                        <span class="badge bg-secondary mb-2">Artículo Devuelto</span>
+                        <h5 class="fw-bold mb-1">{{ devolucion.prod_devuelto_nombre }}</h5>
+                        <div class="text-muted small mb-2">{{ devolucion.color_devuelto_nombre }} / {{ devolucion.tamano_devuelto_nombre }}</div>
+                        <div class="fw-semibold">Cantidad ingresada: <span class="badge bg-dark">{{ devolucion.cantidad }} unidad(es)</span></div>
+                    </div>
+                </div>
+
+                <!-- Artículo Nuevo (si hubo cambio) -->
+                {% if devolucion.motivo == 'CAMBIO' %}
+                <div class="col-md-6">
+                    <div class="p-3 border rounded bg-primary-subtle text-primary-emphasis h-100">
+                        <span class="badge bg-primary mb-2">Artículo Entregado</span>
+                        <h5 class="fw-bold mb-1">{{ devolucion.prod_nuevo_nombre }}</h5>
+                        <div class="small mb-2">{{ devolucion.color_nuevo_nombre }} / {{ devolucion.tamano_nuevo_nombre }}</div>
+                        <div class="fw-semibold">Cantidad entregada: <span class="badge bg-primary">{{ devolucion.cantidad }} unidad(es)</span></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Ajuste Económico y Observaciones -->
+            <div class="row g-3 mt-2">
+                {% if devolucion.motivo == 'CAMBIO' %}
+                <div class="col-md-6">
+                    <div class="p-3 border rounded">
+                        <span class="text-muted small d-block">Diferencia Económica:</span>
+                        {% if devolucion.monto_diferencia > 0 %}
+                        <h4 class="fw-bold text-danger mb-0">+${{ "%.2f"|format(devolucion.monto_diferencia) }}</h4>
+                        <small class="text-muted">Abonado por el cliente</small>
+                        {% elif devolucion.monto_diferencia < 0 %}
+                        <h4 class="fw-bold text-success mb-0">-${{ "%.2f"|format(devolucion.monto_diferencia|abs) }}</h4>
+                        <small class="text-muted">Reintegro o crédito a favor del cliente</small>
+                        {% else %}
+                        <h4 class="fw-bold text-secondary mb-0">$0.00</h4>
+                        <small class="text-muted">Sin diferencia económica (mismo valor)</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="col-md-{% if devolucion.motivo == 'CAMBIO' %}6{% else %}12{% endif %}">
+                    <div class="p-3 border rounded h-100">
+                        <span class="text-muted small d-block">Observaciones:</span>
+                        <p class="mb-0 text-secondary mt-1">
+                            {{ devolucion.observaciones or 'Sin observaciones adicionales registradas.' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

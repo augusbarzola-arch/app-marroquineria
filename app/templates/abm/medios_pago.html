@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Medios de Pago{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Botón Nuevo -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-credit-card text-primary me-2"></i>Gestión de Medios de Pago</h3>
+            <p class="text-secondary mb-0">Formas de pago y sus porcentajes de recargo (+) o descuento (-)</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Medio de Pago
+        </button>
+    </div>
+
+    <!-- Buscador -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/medios-pago" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Buscar por nombre..." value="{{ search or '' }}">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-secondary">Buscar</button>
+                    {% if search %}
+                    <a href="/medios-pago" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+                <div class="col text-end text-muted small">
+                    Total: <strong>{{ total }}</strong> registros
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Medios de Pago -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Nombre del Medio</th>
+                        <th>Ajuste de Precio</th>
+                        <th>Efecto en el Total</th>
+                        <th class="text-end" style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted fw-semibold">#{{ item.id_medio_pago }}</td>
+                        <td class="fw-bold">{{ item.nombre_medio }}</td>
+                        <td>
+                            {% if item.porcentaje_descuento_recargo < 0 %}
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-1">
+                                <i class="bi bi-arrow-down-circle me-1"></i> {{ item.porcentaje_descuento_recargo }}% (Descuento)
+                            </span>
+                            {% elif item.porcentaje_descuento_recargo > 0 %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                <i class="bi bi-arrow-up-circle me-1"></i> +{{ item.porcentaje_descuento_recargo }}% (Recargo)
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border px-2 py-1">
+                                0.00% (Sin cambio)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-secondary small">
+                            {% if item.porcentaje_descuento_recargo < 0 %}
+                            Resta el {{ (item.porcentaje_descuento_recargo | abs) }}% al precio lista
+                            {% elif item.porcentaje_descuento_recargo > 0 %}
+                            Suma el {{ item.porcentaje_descuento_recargo }}% al precio lista
+                            {% else %}
+                            Mantiene el precio lista sin modificaciones
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openEditModal({{ item.id_medio_pago }}, '{{ item.nombre_medio | e }}', {{ item.porcentaje_descuento_recargo }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteItem({{ item.id_medio_pago }}, '{{ item.nombre_medio | e }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No se encontraron medios de pago registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Alta -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createForm" onsubmit="handleCreate(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nuevo Medio de Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_medio" class="form-control" required maxlength="50" placeholder="Ej: Efectivo, Tarjeta Crédito 3 Cuotas">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Porcentaje Descuento (-) o Recargo (+) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="-100" max="100" name="porcentaje_descuento_recargo" class="form-control" value="0.00" required>
+                        <div class="form-text">
+                            Escriba valor <strong>negativo</strong> para descuento (ej: <code>-20.00</code> para 20% de descuento).<br>
+                            Escriba valor <strong>positivo</strong> para recargo (ej: <code>10.00</code> para 10% de recargo).
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveCreate">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edición -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm" onsubmit="handleUpdate(event)">
+                <input type="hidden" name="id_medio_pago" id="edit_id_medio_pago">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Editar Medio de Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_medio" id="edit_nombre_medio" class="form-control" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Porcentaje Descuento (-) o Recargo (+) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="-100" max="100" name="porcentaje_descuento_recargo" id="edit_porcentaje_descuento_recargo" class="form-control" required>
+                        <div class="form-text">
+                            Negativo = Descuento (-20.00) | Positivo = Recargo (10.00) | 0.00 = Sin cambio.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveEdit">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+async function handleCreate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('btnSaveCreate');
+    btn.disabled = true;
+
+    const data = {
+        nombre_medio: form.nombre_medio.value.trim(),
+        porcentaje_descuento_recargo: parseFloat(form.porcentaje_descuento_recargo.value)
+    };
+
+    try {
+        const res = await fetch('/medios-pago', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al crear el medio de pago.');
+
+        window.location.href = '/medios-pago?msg=' + encodeURIComponent('Medio de pago creado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function openEditModal(id, nombre, porcentaje) {
+    document.getElementById('edit_id_medio_pago').value = id;
+    document.getElementById('edit_nombre_medio').value = nombre;
+    document.getElementById('edit_porcentaje_descuento_recargo').value = parseFloat(porcentaje);
+    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+}
+
+async function handleUpdate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id_medio_pago.value;
+    const btn = document.getElementById('btnSaveEdit');
+    btn.disabled = true;
+
+    const data = {
+        nombre_medio: form.nombre_medio.value.trim(),
+        porcentaje_descuento_recargo: parseFloat(form.porcentaje_descuento_recargo.value)
+    };
+
+    try {
+        const res = await fetch(`/medios-pago/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al actualizar el medio de pago.');
+
+        window.location.href = '/medios-pago?msg=' + encodeURIComponent('Medio de pago actualizado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function deleteItem(id, nombre) {
+    confirmModal(
+        'Eliminar Medio de Pago',
+        `¿Está seguro de que desea eliminar el medio de pago "${nombre}"?`,
+        async () => {
+            try {
+                const res = await fetch(`/medios-pago/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar el registro.');
+
+                window.location.href = '/medios-pago?msg=' + encodeURIComponent('Medio de pago eliminado con éxito.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}

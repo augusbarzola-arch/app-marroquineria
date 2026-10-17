@@ -1,0 +1,627 @@
+/* ==========================================================================
+   Estilos personalizados - Sistema de Gestión de Marroquinería
+   Tema: Modern Dark Glassmorphism con Acento Cyan (#22d3ee) y Fuente Inter
+   ========================================================================== */
+
+/* Variables Globales y Tema Oscuro (Predeterminado) */
+:root {
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --sidebar-width: 260px;
+    --header-height: 64px;
+    
+    /* Acentos */
+    --accent-cyan: #22d3ee;
+    --accent-cyan-hover: #06b6d4;
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #22d3ee 0%, #0369a1 100%);
+    
+    /* Tema Oscuro (Definición por defecto) */
+    --bg-main: #0f1115;
+    --bg-surface: rgba(255, 255, 255, 0.04);
+    --bg-surface-hover: rgba(255, 255, 255, 0.07);
+    --bg-glass-modal: rgba(15, 20, 30, 0.88);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --border-glass-hover: rgba(34, 211, 238, 0.3);
+    --glass-blur: blur(12px);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    
+    --sidebar-bg: rgba(13, 17, 23, 0.82);
+    --sidebar-color: #94a3b8;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+    --sidebar-active-bg: rgba(6, 182, 212, 0.15);
+    --sidebar-active-color: #22d3ee;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    
+    --header-bg: rgba(15, 17, 21, 0.78);
+    --header-border: rgba(255, 255, 255, 0.08);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+/* Modo Claro de soporte */
+[data-bs-theme="light"] {
+    --bg-main: #f1f5f9;
+    --bg-surface: rgba(255, 255, 255, 0.85);
+    --bg-surface-hover: rgba(255, 255, 255, 1);
+    --bg-glass-modal: rgba(255, 255, 255, 0.95);
+    --border-glass: rgba(0, 0, 0, 0.08);
+    --border-glass-hover: rgba(6, 182, 212, 0.4);
+    --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    
+    --sidebar-bg: #1e293b;
+    --sidebar-color: #cbd5e1;
+    --sidebar-hover-bg: #334155;
+    --sidebar-active-bg: #0284c7;
+    --sidebar-active-color: #ffffff;
+    --sidebar-border: rgba(0, 0, 0, 0.1);
+    
+    --header-bg: rgba(255, 255, 255, 0.9);
+    --header-border: #e2e8f0;
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+}
+
+/* Tipografía y Cuerpo General */
+body {
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    letter-spacing: -0.01em;
+}
+
+[data-bs-theme="dark"] body {
+    background-color: #0f1115;
+    background-image: 
+        radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+    background-attachment: fixed;
+}
+
+/* ==========================================================================
+   Sidebar Fija con Glassmorphism
+   ========================================================================== */
+#sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid var(--sidebar-border);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+#sidebar .brand {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    padding: 0 1.25rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    border-bottom: 1px solid var(--sidebar-border);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+#sidebar .brand i {
+    color: var(--accent-cyan) !important;
+}
+
+#sidebar .nav-link {
+    color: var(--sidebar-color);
+    padding: 0.7rem 1.15rem;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 8px;
+    margin: 0.2rem 0.75rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+#sidebar .nav-link:hover {
+    color: #ffffff;
+    background-color: var(--sidebar-hover-bg);
+    transform: translateX(2px);
+}
+
+#sidebar .nav-link.active {
+    color: var(--sidebar-active-color);
+    background-color: var(--sidebar-active-bg);
+    border-color: rgba(34, 211, 238, 0.25);
+    font-weight: 600;
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.12);
+}
+
+#sidebar .nav-link i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+#sidebar .submenu {
+    list-style: none;
+    padding-left: 2rem;
+    margin: 0.25rem 0;
+}
+
+#sidebar .submenu .nav-link {
+    font-size: 0.85rem;
+    padding: 0.45rem 0.75rem;
+    margin: 0.15rem 0.75rem 0.15rem 0;
+}
+
+/* ==========================================================================
+   Header Superior Fijo con Glassmorphism
+   ========================================================================== */
+#main-wrapper {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#top-header {
+    height: var(--header-height);
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+#page-content {
+    flex: 1;
+    padding: 1.75rem;
+}
+
+/* ==========================================================================
+   Efecto Glassmorphism en Paneles y Tarjetas (.card)
+   ========================================================================== */
+.card {
+    background-color: var(--bg-surface) !important;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    border-color: var(--border-glass-hover) !important;
+}
+
+.card-header,
+.card-footer {
+    background-color: transparent !important;
+    border-color: var(--border-glass) !important;
+}
+
+/* ==========================================================================
+   Botones Modernos y Acentos
+   ========================================================================== */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-sm {
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+}
+
+.btn-lg {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+}
+
+.btn-primary {
+    background: var(--accent-gradient) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.28);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--accent-gradient-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4);
+    color: #ffffff !important;
+}
+
+.btn-outline-primary {
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-cyan) !important;
+    color: #0f172a !important;
+    font-weight: 600;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(34, 211, 238, 0.3);
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #94a3b8 !important;
+}
+
+.btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ==========================================================================
+   Inputs, Formularios y Selects en Dark Mode
+   ========================================================================== */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f1f5f9 !important;
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border-color: var(--accent-cyan) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22) !important;
+    outline: none;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+[data-bs-theme="dark"] .form-select option {
+    background-color: #1a2234;
+    color: #f1f5f9;
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #94a3b8 !important;
+    border-radius: 8px;
+}
+
+/* ==========================================================================
+   Tablas, Encabezados y Normalización Dark Mode (Historial de Ventas, etc.)
+   ========================================================================== */
+.table-responsive {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: #cbd5e1 !important;
+    color: #cbd5e1;
+    margin-bottom: 0;
+}
+
+[data-bs-theme="dark"] .table > :not(caption) > * > * {
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: inherit;
+    padding: 0.85rem 1rem;
+}
+
+[data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: rgba(34, 211, 238, 0.04) !important;
+    color: #ffffff;
+}
+
+/* Sobrescritura de .table-light en thead y tfoot (Corrige Historial de Ventas) */
+[data-bs-theme="dark"] .table-light,
+[data-bs-theme="dark"] thead.table-light,
+[data-bs-theme="dark"] thead.table-light > tr > th,
+[data-bs-theme="dark"] tfoot.table-light,
+[data-bs-theme="dark"] tfoot.table-light > tr > td,
+[data-bs-theme="dark"] tfoot.table-light > tr > th {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    color: #94a3b8 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.76rem;
+    letter-spacing: 0.6px;
+}
+
+/* Normalización de contenedores .bg-light en modo noche */
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(255, 255, 255, 0.035) !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   Badges y Etiquetas
+   ========================================================================== */
+.badge {
+    font-weight: 500;
+    border-radius: 6px;
+    letter-spacing: 0.01em;
+}
+
+/* Sobrescribir badges claros en modo oscuro */
+[data-bs-theme="dark"] .badge.bg-light,
+[data-bs-theme="dark"] .badge.bg-light.text-dark {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-secondary-subtle {
+    background-color: rgba(148, 163, 184, 0.12) !important;
+    color: #cbd5e1 !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-primary-subtle {
+    background-color: rgba(34, 211, 238, 0.12) !important;
+    color: var(--accent-cyan) !important;
+    border: 1px solid rgba(34, 211, 238, 0.25) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-success-subtle {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+    color: #4ade80 !important;
+    border: 1px solid rgba(34, 197, 94, 0.25) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-warning {
+    background-color: rgba(245, 158, 11, 0.18) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+/* ==========================================================================
+   Modales Glassmorphism
+   ========================================================================== */
+.modal-content {
+    background-color: var(--bg-glass-modal) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-glass) !important;
+    padding: 1.15rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-glass) !important;
+    padding: 1rem 1.5rem;
+}
+
+/* ==========================================================================
+   Dropdowns y Paginación
+   ========================================================================== */
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: rgba(15, 20, 30, 0.94) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    padding: 0.5rem;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: #cbd5e1;
+    border-radius: 6px;
+    padding: 0.5rem 0.85rem;
+    transition: all 0.15s ease;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+    background-color: rgba(34, 211, 238, 0.12);
+    color: var(--accent-cyan);
+}
+
+[data-bs-theme="dark"] .page-link {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+}
+
+[data-bs-theme="dark"] .page-link:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   Alertas de Stock
+   ========================================================================== */
+[data-bs-theme="dark"] .row-stock-critical {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+[data-bs-theme="dark"] .row-stock-warning {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+}
+
+/* ==========================================================================
+   Toasts flotantes arriba a la derecha
+   ========================================================================== */
+.toast-container-top {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 1090;
+}
+
+.toast {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   Ticket Imprimible (Excepción de modo oscuro para impresión limpia)
+   ========================================================================== */
+.printable-ticket {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+}
+
+@media print {
+    #sidebar,
+    #top-header,
+    .no-print,
+    .btn,
+    .pagination {
+        display: none !important;
+    }
+
+    #main-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+    #page-content {
+        padding: 0 !important;
+    }
+
+    .printable-ticket {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+}
+
+/* ==========================================================================
+   Responsive móvil
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    #sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+    }
+    #sidebar.show {
+        margin-left: 0;
+    }
+    #main-wrapper {
+        margin-left: 0;
+    }
+}
+
+/* ==========================================================================
+   Dashboard Cards Expandibles (Tarea 4)
+   ========================================================================== */
+.card-expandable {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.card-expandable:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15) !important;
+}
+
+.card-expandable.is-expanded {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 10px 28px rgba(34, 211, 238, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-bs-theme="dark"] .card-expandable.is-expanded {
+    background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+.card-expandable .chevron-indicator {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.card-expandable:hover .chevron-indicator {
+    color: var(--accent-cyan);
+}
+
+.card-expandable.is-expanded .chevron-indicator {
+    transform: rotate(180deg);
+    color: var(--accent-cyan);
+}
+
+.card-expandable-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin-top 0.25s ease;
+}
+
+.card-expandable.is-expanded .card-expandable-content {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-glass);
+}
+

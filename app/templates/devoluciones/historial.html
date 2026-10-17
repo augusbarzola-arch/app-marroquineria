@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Devoluciones{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Acción -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-arrow-left-right text-primary me-2"></i>Historial de Devoluciones</h3>
+            <p class="text-secondary mb-0">Registro y trazabilidad de cambios, reparaciones y devoluciones con reembolso</p>
+        </div>
+        <a href="/devoluciones/nueva" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Nueva Devolución / Cambio
+        </a>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/devoluciones/historial" class="row g-2 align-items-center">
+                <!-- Fecha Desde -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ fecha_desde or '' }}">
+                </div>
+
+                <!-- Fecha Hasta -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ fecha_hasta or '' }}">
+                </div>
+
+                <!-- Motivo -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Motivo</label>
+                    <select name="motivo" class="form-select form-select-sm">
+                        <option value="">Todos los motivos</option>
+                        <option value="CAMBIO" {% if selected_motivo == 'CAMBIO' %}selected{% endif %}>CAMBIO</option>
+                        <option value="DEVOLUCION" {% if selected_motivo == 'DEVOLUCION' %}selected{% endif %}>DEVOLUCION</option>
+                        <option value="REPARACION" {% if selected_motivo == 'REPARACION' %}selected{% endif %}>REPARACION</option>
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="col-md-3 d-flex align-items-end gap-1 mt-auto">
+                    <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+                    {% if fecha_desde or fecha_hasta or selected_motivo %}
+                    <a href="/devoluciones/historial" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    {% endif %}
+                    <div class="ms-auto text-end text-muted small">
+                        Total: <strong>{{ total }}</strong> registros
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Devoluciones -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">ID</th>
+                        <th>Fecha y Hora</th>
+                        <th>Venta Orig.</th>
+                        <th>Variante Devuelta</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-center">Motivo</th>
+                        <th>Variante Nueva (Cambio)</th>
+                        <th class="text-end">Diferencia</th>
+                        <th class="text-end" style="width: 90px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in devoluciones %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ "%04d"|format(d.id_devolucion) }}</td>
+                        <td>
+                            <i class="bi bi-calendar-event me-1 text-muted"></i>
+                            {{ d.fecha.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td>
+                            <a href="/ventas/{{ d.id_venta }}" class="badge bg-secondary-subtle text-secondary-emphasis border text-decoration-none">
+                                Venta #{{ d.id_venta }}
+                            </a>
+                        </td>
+                        <td>
+                            <strong>{{ d.prod_devuelto_nombre }}</strong><br>
+                            <small class="text-muted">{{ d.color_devuelto_nombre }} / {{ d.tamano_devuelto_nombre }}</small>
+                        </td>
+                        <td class="text-center fw-bold">{{ d.cantidad }}</td>
+                        <td class="text-center">
+                            {% if d.motivo == 'CAMBIO' %}
+                            <span class="badge bg-primary px-2 py-1"><i class="bi bi-arrow-repeat me-1"></i> CAMBIO</span>
+                            {% elif d.motivo == 'DEVOLUCION' %}
+                            <span class="badge bg-danger px-2 py-1"><i class="bi bi-box-arrow-down-left me-1"></i> DEVOLUCIÓN</span>
+                            {% elif d.motivo == 'REPARACION' %}
+                            <span class="badge bg-warning px-2 py-1"><i class="bi bi-tools me-1"></i> REPARACIÓN</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.motivo == 'CAMBIO' and d.prod_nuevo_nombre %}
+                            <strong>{{ d.prod_nuevo_nombre }}</strong><br>
+                            <small class="text-muted">{{ d.color_nuevo_nombre }} / {{ d.tamano_nuevo_nombre }}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if d.motivo == 'CAMBIO' %}
+                                {% if d.monto_diferencia > 0 %}
+                                <span class="text-danger fw-bold">+${{ "%.2f"|format(d.monto_diferencia) }}</span>
+                                {% elif d.monto_diferencia < 0 %}
+                                <span class="text-success fw-bold">-${{ "%.2f"|format(d.monto_diferencia|abs) }}</span>
+                                {% else %}
+                                <span class="text-muted">$0.00</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">$0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="/devoluciones/{{ d.id_devolucion }}" class="btn btn-sm btn-outline-info" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-arrow-left-right fs-2 d-block mb-2"></i>
+                            No se encontraron registros de devoluciones con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_motivo %}&motivo={{ selected_motivo }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_motivo %}&motivo={{ selected_motivo }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_motivo %}&motivo={{ selected_motivo }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

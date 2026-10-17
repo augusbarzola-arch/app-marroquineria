@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Devolución / Cambio{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 950px;">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-arrow-left-right text-primary me-2"></i>Registrar Devolución, Cambio o Reparación
+            </h3>
+            <p class="text-secondary mb-0">Gestión post-venta con ajuste automático de inventario y cálculo de diferencias</p>
+        </div>
+        <a href="/devoluciones/historial" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Historial
+        </a>
+    </div>
+
+    <!-- Paso 1: Buscar Venta -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-3">
+            <h5 class="fw-bold mb-0"><span class="badge bg-primary me-2">1</span> Buscar Venta Original</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent">Nº de Venta #</span>
+                        <input type="number" min="1" id="input-buscar-venta" class="form-control" placeholder="Ej: 1" value="{{ preselected_venta_id or '' }}">
+                        <button type="button" class="btn btn-primary" onclick="buscarVentaPorId()">
+                            <i class="bi bi-search me-1"></i> Cargar Venta
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end text-muted small">
+                    O seleccione de las ventas recientes en el <a href="/ventas/historial">Historial</a>.
+                </div>
+            </div>
+
+            <!-- Resumen de Venta Encontrada -->
+            <div id="venta-info-card" class="alert alert-light border mt-3 d-none">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="d-block" id="info-venta-titulo">Venta #</strong>
+                        <span class="text-muted small" id="info-venta-fecha">Fecha: </span>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary" id="info-venta-medio">Medio de Pago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paso 2: Seleccionar Ítem a Devolver -->
+    <div class="card border-0 shadow-sm mb-4 d-none" id="card-paso-items">
+        <div class="card-header bg-transparent py-3">
+            <h5 class="fw-bold mb-0"><span class="badge bg-primary me-2">2</span> Seleccionar Artículo de la Venta</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="small">
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Artículo / Variante</th>
+                        <th class="text-center">Cant. Vendida</th>
+                        <th class="text-center">Ya Devueltas</th>
+                        <th class="text-center">Disponible p/ Devolver</th>
+                        <th class="text-end">P. Unit. Cobrado</th>
+                    </tr>
+                </thead>
+                <tbody id="items-venta-tbody">
+                    <!-- Filas generadas por JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paso 3 y 4: Motivo y Configuración de Devolución / Cambio -->
+    <div class="card border-0 shadow-sm mb-4 d-none" id="card-paso-motivo">
+        <div class="card-header bg-transparent py-3">
+            <h5 class="fw-bold mb-0"><span class="badge bg-primary me-2">3</span> Configurar Motivo y Cantidad</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <!-- Cantidad a Devolver -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Cantidad a Devolver <span class="text-danger">*</span></label>
+                    <input type="number" min="1" id="devolucion-cantidad" class="form-control" value="1" oninput="calcularDiferenciaCambio()">
+                    <div class="form-text" id="help-cantidad-disponible">Máximo disponible: 1</div>
+                </div>
+
+                <!-- Motivo -->
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">Motivo de la Operación <span class="text-danger">*</span></label>
+                    <select id="devolucion-motivo" class="form-select" onchange="onMotivoChange()">
+                        <option value="DEVOLUCION">DEVOLUCION (Reintegro de dinero y suma al stock)</option>
+                        <option value="CAMBIO">CAMBIO (Por otro artículo / variante con ajuste de precio)</option>
+                        <option value="REPARACION">REPARACION (Envío a taller / reparación; sin cambio de stock)</option>
+                    </select>
+                </div>
+
+                <!-- Sección exclusiva para CAMBIO -->
+                <div class="col-12 border rounded p-3 d-none" style="background: var(--bg-surface);" id="seccion-cambio">
+                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-arrow-repeat me-1"></i> Seleccionar Nueva Variante a Entregar</h6>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-8">
+                            <label class="form-label small text-muted">Variante Nueva</label>
+                            <select id="select-variante-nueva" class="form-select" onchange="calcularDiferenciaCambio()">
+                                <option value="">Seleccione artículo, color y talle...</option>
+                                {% for vn in variantes_disponibles %}
+                                <option value="{{ vn.id_variante }}" 
+                                        data-precio="{{ vn.precio_lista }}" 
+                                        data-stock="{{ vn.stock_actual }}">
+                                    {{ vn.nombre_producto }} — {{ vn.nombre_color }} / {{ vn.nombre_tamano }} (Precio Lista: ${{ "%.2f"|format(vn.precio_lista) }} | Stock: {{ vn.stock_actual }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted">Diferencia a Abonar / Saldo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="display-monto-diferencia" class="form-control fw-bold" readonly value="0.00">
+                            </div>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <span class="small" id="explicacion-diferencia">
+                                Fórmula: (Precio Variante Nueva - Precio Cobrado Original) × Cantidad
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Observaciones (Opcional)</label>
+                    <input type="text" id="devolucion-observaciones" class="form-control" maxlength="255" placeholder="Detalle del motivo, falla, defecto o acuerdo con el cliente...">
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer bg-transparent p-3 text-end">
+            <button type="button" class="btn btn-success btn-lg px-4" id="btn-confirmar-devolucion" onclick="submitDevolucion()">
+                <i class="bi bi-check2-circle me-1"></i> Confirmar Operación
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+let itemsVentaActual = [];
+let itemSeleccionado = null; // { id_variante, cantidad_disponible, precio_unitario_cobrado, nombre_producto, nombre_color, nombre_tamano }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const preselected = document.getElementById('input-buscar-venta').value;
+    if (preselected) {
+        buscarVentaPorId();
+    }
+});
+
+async function buscarVentaPorId() {
+    const idVenta = parseInt(document.getElementById('input-buscar-venta').value);
+    if (isNaN(idVenta) || idVenta <= 0) {
+        showToast('Ingrese un número de venta válido.', 'danger');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/devoluciones/venta/${idVenta}`);
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Venta no encontrada.');
+        }
+
+        const data = await res.json();
+        itemsVentaActual = data.items;
+
+        // Mostrar ficha de la venta
+        document.getElementById('info-venta-titulo').textContent = `Venta #${data.id_venta}`;
+        document.getElementById('info-venta-fecha').textContent = `Fecha: ${data.fecha_hora}`;
+        document.getElementById('info-venta-medio').textContent = data.nombre_medio;
+        document.getElementById('venta-info-card').classList.remove('d-none');
+
+        // Renderizar ítems
+        renderItemsVenta();
+        document.getElementById('card-paso-items').classList.remove('d-none');
+
+    } catch (err) {
+        showToast(err.message, 'danger');
+        document.getElementById('venta-info-card').classList.add('d-none');
+        document.getElementById('card-paso-items').classList.add('d-none');
+        document.getElementById('card-paso-motivo').classList.add('d-none');
+    }
+}
+
+function renderItemsVenta() {
+    const tbody = document.getElementById('items-venta-tbody');
+    itemSeleccionado = null;
+    document.getElementById('card-paso-motivo').classList.add('d-none');
+
+    if (itemsVentaActual.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">Esta venta no contiene renglones.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = itemsVentaActual.map((item, idx) => {
+        const disponible = item.cantidad_disponible;
+        const disabled = disponible <= 0;
+
+        return `
+            <tr class="${disabled ? 'opacity-50' : ''}">
+                <td class="text-center">
+                    <input class="form-check-input" type="radio" name="item_venta_radio" 
+                           id="item-radio-${idx}" value="${item.id_variante}" 
+                           ${disabled ? 'disabled' : ''} onchange="seleccionarItem(${idx})">
+                </td>
+                <td>
+                    <label class="form-check-label fw-bold d-block" for="item-radio-${idx}">
+                        ${item.nombre_producto}
+                    </label>
+                    <small class="text-secondary">${item.nombre_color} / ${item.nombre_tamano}</small>
+                </td>
+                <td class="text-center">${item.cantidad_vendida}</td>
+                <td class="text-center text-muted">${item.cantidad_ya_devuelta}</td>
+                <td class="text-center">
+                    <span class="badge ${disponible > 0 ? 'bg-success-subtle text-success-emphasis border' : 'bg-secondary'} px-2">
+                        ${disponible} disponible(s)
+                    </span>
+                </td>
+                <td class="text-end fw-semibold">$${parseFloat(item.precio_unitario_cobrado).toFixed(2)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function seleccionarItem(idx) {
+    itemSeleccionado = itemsVentaActual[idx];
+    const cantInput = document.getElementById('devolucion-cantidad');
+    const helpCant = document.getElementById('help-cantidad-disponible');
+
+    cantInput.max = itemSeleccionado.cantidad_disponible;
+    cantInput.value = 1;
+    helpCant.textContent = `Máximo disponible para devolver: ${itemSeleccionado.cantidad_disponible} unidad(es)`;
+
+    document.getElementById('card-paso-motivo').classList.remove('d-none');
+    onMotivoChange();
+}
+
+function onMotivoChange() {
+    const motivo = document.getElementById('devolucion-motivo').value;
+    const seccionCambio = document.getElementById('seccion-cambio');
+
+    if (motivo === 'CAMBIO') {
+        seccionCambio.classList.remove('d-none');
+        calcularDiferenciaCambio();
+    } else {
+        seccionCambio.classList.add('d-none');
+    }
+}
+
+function calcularDiferenciaCambio() {
+    const motivo = document.getElementById('devolucion-motivo').value;
+    if (motivo !== 'CAMBIO' || !itemSeleccionado) return;
+
+    const selectNueva = document.getElementById('select-variante-nueva');
+    const selectedOption = selectNueva.options[selectNueva.selectedIndex];
+    const cant = parseInt(document.getElementById('devolucion-cantidad').value) || 0;
+    const displayDiff = document.getElementById('display-monto-diferencia');
+    const expl = document.getElementById('explicacion-diferencia');
+
+    if (!selectedOption || !selectedOption.dataset.precio) {
+        displayDiff.value = '0.00';
+        expl.textContent = 'Seleccione una variante nueva para calcular la diferencia.';
+        return;
+    }
+
+    const precioNueva = parseFloat(selectedOption.dataset.precio);
+    const precioCobradoOriginal = parseFloat(itemSeleccionado.precio_unitario_cobrado);
+
+    // monto_diferencia = (precio_variante_nueva - precio_cobrado_original) * cantidad
+    const diferencia = (precioNueva - precioCobradoOriginal) * cant;
+    displayDiff.value = diferencia.toFixed(2);
+
+    if (diferencia > 0) {
+        expl.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-arrow-up-circle me-1"></i> El cliente debe abonar: $${diferencia.toFixed(2)}</span>`;
+    } else if (diferencia < 0) {
+        expl.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-arrow-down-circle me-1"></i> Reintegro / Saldo a favor del cliente: $${Math.abs(diferencia).toFixed(2)}</span>`;
+    } else {
+        expl.innerHTML = `<span class="text-secondary fw-bold">Sin diferencia económica ($0.00). Cambio directo.</span>`;
+    }
+}
+
+async function submitDevolucion() {
+    if (!itemSeleccionado) {
+        showToast('Seleccione un ítem a devolver.', 'danger');
+        return;
+    }
+
+    const idVenta = parseInt(document.getElementById('input-buscar-venta').value);
+    const cantidad = parseInt(document.getElementById('devolucion-cantidad').value);
+    const motivo = document.getElementById('devolucion-motivo').value;
+    const observaciones = document.getElementById('devolucion-observaciones').value.trim();
+
+    if (isNaN(cantidad) || cantidad <= 0 || cantidad > itemSeleccionado.cantidad_disponible) {
+        showToast(`La cantidad debe estar entre 1 y ${itemSeleccionado.cantidad_disponible}.`, 'danger');
+        return;
+    }
+
+    let idVarianteNueva = null;
+    let montoDiferencia = 0.0;
+
+    if (motivo === 'CAMBIO') {
+        const selectNueva = document.getElementById('select-variante-nueva');
+        if (!selectNueva.value) {
+            showToast('Debe seleccionar la variante nueva a entregar.', 'danger');
+            return;
+        }
+        idVarianteNueva = parseInt(selectNueva.value);
+        montoDiferencia = parseFloat(document.getElementById('display-monto-diferencia').value) || 0.0;
+    }
+
+    const btn = document.getElementById('btn-confirmar-devolucion');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+
+    const payload = {
+        id_venta: idVenta,
+        id_variante_devuelta: itemSeleccionado.id_variante,
+        cantidad: cantidad,
+        motivo: motivo,
+        id_variante_nueva: idVarianteNueva,
+        monto_diferencia: montoDiferencia,
+        observaciones: observaciones || null
+    };
+
+    try {
+        const res = await fetch('/devoluciones', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al procesar la devolución.');
+
+        window.location.href = `/devoluciones/${data.id_devolucion}?msg=` + encodeURIComponent('Devolución registrada y stock ajustado exitosamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+</script>
+{% endblock %}

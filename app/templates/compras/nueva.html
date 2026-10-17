@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Orden de Compra{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1000px;">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-truck text-primary me-2"></i>Registrar Orden de Compra
+            </h3>
+            <p class="text-secondary mb-0">Recepción de mercadería a proveedores e incremento automático de stock</p>
+        </div>
+        <a href="/compras/historial" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Historial
+        </a>
+    </div>
+
+    <!-- Proveedor y Selector de Variantes -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Proveedor <span class="text-danger">*</span></label>
+                    <select id="compra-proveedor-select" class="form-select form-select-lg">
+                        <option value="">Seleccione un proveedor...</option>
+                        {% for prov in proveedores %}
+                        <option value="{{ prov.id_proveedor }}">
+                            {{ prov.razon_social }} (CUIT: {{ prov.cuit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <h6 class="fw-bold text-secondary mb-3">Agregar Variantes a la Orden</h6>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small text-muted">Variante / Artículo</label>
+                    <select id="compra-variante-select" class="form-select" onchange="onVarianteSelectChange()">
+                        <option value="">Buscar o seleccionar variante...</option>
+                        {% for v in variantes_disponibles %}
+                        <option value="{{ v.id_variante }}" 
+                                data-producto="{{ v.nombre_producto }}" 
+                                data-color="{{ v.nombre_color }}" 
+                                data-tamano="{{ v.nombre_tamano }}" 
+                                data-costo="{{ v.precio_costo }}"
+                                data-stock="{{ v.stock_actual }}">
+                            {{ v.nombre_producto }} — {{ v.nombre_color }} / {{ v.nombre_tamano }} (Stock actual: {{ v.stock_actual }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Cantidad</label>
+                    <input type="number" min="1" id="compra-item-cantidad" class="form-control" value="1">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Costo Unitario ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" step="0.01" min="0" id="compra-item-costo" class="form-control" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100" onclick="addItemToCompra()">
+                        <i class="bi bi-plus-lg me-1"></i> Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Ítems de la Compra -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Ítems a Ingresar</h5>
+            <span class="text-muted small" id="compra-items-count">0 ítems agregados</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Artículo / Variante</th>
+                        <th class="text-center" style="width: 140px;">Cantidad</th>
+                        <th class="text-end" style="width: 180px;">Costo Unitario ($)</th>
+                        <th class="text-end" style="width: 160px;">Subtotal</th>
+                        <th class="text-end" style="width: 60px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="compra-items-tbody">
+                    <tr id="compra-empty-row">
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            Aún no ha agregado ítems a la orden de compra.
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold fs-6">TOTAL COMPRA:</td>
+                        <td class="text-end fw-bold text-primary fs-5" id="compra-total">$0.00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="card-footer bg-transparent p-3 text-end">
+            <button type="button" class="btn btn-success btn-lg px-4" id="btn-submit-compra" onclick="submitCompra()" disabled>
+                <i class="bi bi-check2-circle me-1"></i> Confirmar Compra y Sumar Stock
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+let compraItems = []; // Array: { id_variante, nombre_producto, nombre_color, nombre_tamano, cantidad, precio_costo_unitario }
+
+function onVarianteSelectChange() {
+    const select = document.getElementById('compra-variante-select');
+    const selectedOption = select.options[select.selectedIndex];
+    const costoInput = document.getElementById('compra-item-costo');
+
+    if (selectedOption && selectedOption.dataset.costo) {
+        costoInput.value = parseFloat(selectedOption.dataset.costo).toFixed(2);
+    } else {
+        costoInput.value = '';
+    }
+}
+
+function addItemToCompra() {
+    const select = document.getElementById('compra-variante-select');
+    const selectedOption = select.options[select.selectedIndex];
+    const cantInput = document.getElementById('compra-item-cantidad');
+    const costoInput = document.getElementById('compra-item-costo');
+
+    if (!selectedOption || !selectedOption.value) {
+        showToast('Seleccione una variante.', 'danger');
+        return;
+    }
+
+    const idVariante = parseInt(selectedOption.value);
+    const cantidad = parseInt(cantInput.value);
+    const costo = parseFloat(costoInput.value);
+
+    if (isNaN(cantidad) || cantidad <= 0) {
+        showToast('La cantidad debe ser mayor a 0.', 'danger');
+        return;
+    }
+
+    if (isNaN(costo) || costo < 0) {
+        showToast('El costo unitario no puede ser negativo.', 'danger');
+        return;
+    }
+
+    const existingIndex = compraItems.findIndex(i => i.id_variante === idVariante);
+    if (existingIndex >= 0) {
+        compraItems[existingIndex].cantidad += cantidad;
+        compraItems[existingIndex].precio_costo_unitario = costo;
+    } else {
+        compraItems.push({
+            id_variante: idVariante,
+            nombre_producto: selectedOption.dataset.producto,
+            nombre_color: selectedOption.dataset.color,
+            nombre_tamano: selectedOption.dataset.tamano,
+            cantidad: cantidad,
+            precio_costo_unitario: costo
+        });
+    }
+
+    // Resetear inputs de agregado
+    select.value = '';
+    cantInput.value = '1';
+    costoInput.value = '';
+
+    renderCompraItems();
+}
+
+function updateCompraItem(index, newQty, newCosto) {
+    if (newQty !== undefined) {
+        const qty = parseInt(newQty);
+        if (qty > 0) compraItems[index].cantidad = qty;
+    }
+    if (newCosto !== undefined) {
+        const c = parseFloat(newCosto);
+        if (c >= 0) compraItems[index].precio_costo_unitario = c;
+    }
+    renderCompraItems();
+}
+
+function removeCompraItem(index) {
+    compraItems.splice(index, 1);
+    renderCompraItems();
+}
+
+function renderCompraItems() {
+    const tbody = document.getElementById('compra-items-tbody');
+    const emptyRow = document.getElementById('compra-empty-row');
+    const totalEl = document.getElementById('compra-total');
+    const countEl = document.getElementById('compra-items-count');
+    const btnSubmit = document.getElementById('btn-submit-compra');
+
+    if (compraItems.length === 0) {
+        tbody.innerHTML = `
+            <tr id="compra-empty-row">
+                <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                    Aún no ha agregado ítems a la orden de compra.
+                </td>
+            </tr>
+        `;
+        totalEl.textContent = '$0.00';
+        countEl.textContent = '0 ítems agregados';
+        btnSubmit.disabled = true;
+        return;
+    }
+
+    let grandTotal = 0;
+    countEl.textContent = `${compraItems.length} ítem(s) agregado(s)`;
+    btnSubmit.disabled = false;
+
+    tbody.innerHTML = compraItems.map((item, idx) => {
+        const subtotal = item.cantidad * item.precio_costo_unitario;
+        grandTotal += subtotal;
+
+        return `
+            <tr>
+                <td class="text-muted fw-bold">${idx + 1}</td>
+                <td>
+                    <strong>${item.nombre_producto}</strong><br>
+                    <small class="text-secondary">${item.nombre_color} / ${item.nombre_tamano}</small>
+                </td>
+                <td>
+                    <input type="number" min="1" class="form-control form-control-sm text-center" 
+                           value="${item.cantidad}" onchange="updateCompraItem(${idx}, this.value, undefined)">
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" step="0.01" min="0" class="form-control text-end" 
+                               value="${item.precio_costo_unitario.toFixed(2)}" onchange="updateCompraItem(${idx}, undefined, this.value)">
+                    </div>
+                </td>
+                <td class="text-end fw-bold">$${subtotal.toFixed(2)}</td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeCompraItem(${idx})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    totalEl.textContent = `$${grandTotal.toFixed(2)}`;
+}
+
+async function submitCompra() {
+    const provSelect = document.getElementById('compra-proveedor-select');
+    const idProveedor = provSelect.value;
+
+    if (!idProveedor) {
+        showToast('Debe seleccionar un proveedor.', 'danger');
+        provSelect.focus();
+        return;
+    }
+
+    if (compraItems.length === 0) {
+        showToast('Debe agregar al menos un ítem a la orden de compra.', 'danger');
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-compra');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Registrando Compra...';
+
+    const payload = {
+        id_proveedor: parseInt(idProveedor),
+        items: compraItems.map(i => ({
+            id_variante: i.id_variante,
+            cantidad: i.cantidad,
+            precio_costo_unitario: i.precio_costo_unitario
+        }))
+    };
+
+    try {
+        const res = await fetch('/compras', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error al registrar la compra.');
+
+        window.location.href = `/compras/${data.id_compra}?msg=` + encodeURIComponent('Orden de compra registrada y stock acreditado con éxito.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+</script>
+{% endblock %}

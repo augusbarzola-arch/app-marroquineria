@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Venta #{{ venta.id_venta }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 900px;">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="/ventas/historial" class="text-decoration-none">Historial de Ventas</a> / Venta #{{ "%05d"|format(venta.id_venta) }}
+            </div>
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-receipt text-primary me-2"></i>Detalle de Venta #{{ "%05d"|format(venta.id_venta) }}
+            </h3>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/ventas/historial" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </a>
+            <a href="/ventas/{{ venta.id_venta }}/comprobante" class="btn btn-primary">
+                <i class="bi bi-printer me-1"></i> Imprimir Comprobante
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumen Comercial -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <span class="text-muted small d-block">Fecha y Hora:</span>
+                    <strong class="fs-6">{{ venta.fecha_hora.strftime('%d/%m/%Y %H:%M:%S') }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <span class="text-muted small d-block">Medio de Pago:</span>
+                    <strong class="fs-6">{{ venta.nombre_medio }}</strong>
+                    {% if venta.porcentaje_descuento_recargo != 0 %}
+                    <span class="badge {% if venta.porcentaje_descuento_recargo < 0 %}bg-success{% else %}bg-warning{% endif %} ms-1">
+                        {{ venta.porcentaje_descuento_recargo }}%
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
+                <div class="card-body">
+                    <span class="small d-block opacity-75">Monto Total Cobrado:</span>
+                    <h4 class="fw-bold mb-0">${{ "%.2f"|format(venta.monto_total) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Ítems Vendidos -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-3">
+            <h5 class="fw-bold mb-0">Artículos Vendidos ({{ total_unidades }} unidades)</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;" class="text-center">Renglón</th>
+                        <th>Producto / Artículo</th>
+                        <th>Color</th>
+                        <th>Tamaño</th>
+                        <th class="text-center" style="width: 80px;">Cant.</th>
+                        <th class="text-end" style="width: 120px;">P. Unit. Cobrado</th>
+                        <th class="text-end" style="width: 130px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in detalles %}
+                    <tr>
+                        <td class="text-center text-muted fw-semibold">{{ d.renglon_venta }}</td>
+                        <td>
+                            <a href="/productos/{{ d.id_producto }}" class="fw-bold text-decoration-none">
+                                {{ d.nombre_producto }}
+                            </a>
+                            <div class="text-muted small">{{ d.nombre_categoria }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+                                {{ d.nombre_color }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary-emphasis border">
+                                {{ d.nombre_tamano }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold">{{ d.cantidad }}</td>
+                        <td class="text-end">${{ "%.2f"|format(d.precio_unitario_cobrado) }}</td>
+                        <td class="text-end fw-bold text-success">${{ "%.2f"|format(d.subtotal) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" class="text-end">Subtotal Precio Lista:</td>
+                        <td colspan="2" class="text-end fw-semibold">${{ "%.2f"|format(subtotal_original) }}</td>
+                    </tr>
+                    {% if descuento_recargo_monto != 0 %}
+                    <tr>
+                        <td colspan="5" class="text-end">Ajuste por Medio de Pago:</td>
+                        <td colspan="2" class="text-end fw-semibold {% if descuento_recargo_monto < 0 %}text-success{% else %}text-warning{% endif %}">
+                            {% if descuento_recargo_monto < 0 %}-${{ "%.2f"|format(descuento_recargo_monto|abs) }}{% else %}+${{ "%.2f"|format(descuento_recargo_monto) }}{% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td colspan="5" class="text-end fw-bold fs-6">TOTAL FINAL:</td>
+                        <td colspan="2" class="text-end fw-bold text-primary fs-5">${{ "%.2f"|format(venta.monto_total) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
