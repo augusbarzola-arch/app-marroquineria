@@ -47,24 +47,24 @@
                         <i class="bi bi-chevron-down chevron-indicator ms-2"></i>
                     </div>
 
-                    <!-- Detalle expandible: Últimas ventas de hoy -->
+                    <!-- Detalle expandible: Últimas 5 ventas registradas -->
                     <div class="card-expandable-content">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-semibold text-secondary">Ventas de Hoy</span>
+                            <span class="small fw-semibold text-secondary">Últimas 5 Ventas</span>
                             <a href="/ventas/historial" class="small text-decoration-none" onclick="event.stopPropagation()">Historial &rarr;</a>
                         </div>
-                        {% if ventas_hoy_detalle %}
+                        {% if ultimas_ventas %}
                         <div class="list-group list-group-flush small">
-                            {% for v in ventas_hoy_detalle %}
+                            {% for uv in ultimas_ventas %}
                             <div class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center border-secondary-subtle">
                                 <div>
-                                    <span class="fw-semibold">#{{ "%04d"|format(v.id_venta) }}</span>
-                                    <span class="text-muted smaller">({{ v.nombre_medio }})</span>
-                                    <div class="text-muted smaller">{{ v.fecha_hora.strftime('%H:%M') }} · {{ v.total_items }} ítem(s)</div>
+                                    <span class="fw-semibold">#{{ "%04d"|format(uv.id_venta) }}</span>
+                                    <span class="text-muted smaller">({{ uv.nombre_medio }})</span>
+                                    <div class="text-muted smaller">{{ uv.fecha_hora.strftime('%d/%m %H:%M') }} · {{ uv.total_items or 1 }} ítem(s)</div>
                                 </div>
                                 <div class="text-end">
-                                    <span class="fw-bold text-success d-block">${{ "%.2f"|format(v.monto_total) }}</span>
-                                    <a href="/ventas/{{ v.id_venta }}/comprobante" class="text-secondary smaller text-decoration-none" 
+                                    <span class="fw-bold text-success d-block">${{ "%.2f"|format(uv.monto_total) }}</span>
+                                    <a href="/ventas/{{ uv.id_venta }}/comprobante" class="text-secondary smaller text-decoration-none" 
                                        title="Ver comprobante" onclick="event.stopPropagation()">
                                         <i class="bi bi-printer"></i>
                                     </a>
@@ -74,7 +74,7 @@
                         </div>
                         {% else %}
                         <div class="text-center py-2 text-muted small">
-                            <i class="bi bi-info-circle me-1"></i> Aún no se registraron ventas hoy.
+                            <i class="bi bi-info-circle me-1"></i> No hay ventas registradas todavía.
                         </div>
                         {% endif %}
                     </div>
@@ -196,28 +196,42 @@
                         <i class="bi bi-chevron-down chevron-indicator ms-2"></i>
                     </div>
 
-                    <!-- Detalle expandible: Productos críticos -->
+                    <!-- Detalle expandible: Productos con stock bajo (Tabla) -->
                     <div class="card-expandable-content">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-semibold text-danger">Artículos Críticos</span>
+                            <span class="small fw-semibold text-danger">Artículos con Stock Bajo</span>
                             <a href="/stock?solo_stock_bajo=true" class="small text-danger text-decoration-none" onclick="event.stopPropagation()">Ver todos &rarr;</a>
                         </div>
                         {% if stock_critico %}
-                        <div class="list-group list-group-flush small">
-                            {% for sc in stock_critico[:4] %}
-                            <div class="list-group-item bg-transparent px-0 py-1 border-secondary-subtle">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-semibold text-truncate me-2" style="max-width: 140px;" title="{{ sc.nombre_producto }}">
-                                        {{ sc.nombre_producto }}
-                                    </span>
-                                    <span class="badge bg-danger py-0 px-1">{{ sc.stock_actual }}/{{ sc.stock_minimo }}</span>
-                                </div>
-                                <div class="text-muted smaller d-flex justify-content-between align-items-center">
-                                    <span>{{ sc.nombre_color }} · {{ sc.nombre_tamano }}</span>
-                                    <a href="/stock?id_producto={{ sc.id_producto }}" class="text-info text-decoration-none" onclick="event.stopPropagation()">Ajustar</a>
-                                </div>
-                            </div>
-                            {% endfor %}
+                        <div class="table-responsive small">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="text-muted smaller">
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Variante</th>
+                                        <th class="text-center">Stock</th>
+                                        <th class="text-end"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sc in stock_critico[:5] %}
+                                    <tr>
+                                        <td class="text-truncate fw-semibold" style="max-width: 100px;" title="{{ sc.nombre_producto }}">
+                                            {{ sc.nombre_producto }}
+                                        </td>
+                                        <td class="smaller text-muted">{{ sc.nombre_color }} {{ sc.nombre_tamano }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-danger py-0 px-1 font-monospace">{{ sc.stock_actual }}/{{ sc.stock_minimo }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="/stock?id_producto={{ sc.id_producto }}" class="btn btn-sm btn-outline-danger py-0 px-1" title="Ajustar stock" onclick="event.stopPropagation()">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                         {% else %}
                         <div class="text-center py-2 text-success small">

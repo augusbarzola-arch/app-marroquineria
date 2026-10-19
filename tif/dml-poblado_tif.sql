@@ -1,4 +1,4 @@
-
+TRUNCATE TABLE devolucion, detalle_venta, detalle_compra, venta, compra, variante_producto, producto, color, tamano, categoria, material, proveedor, medio_pago RESTART IDENTITY CASCADE;
 -- DML - POBLADO DE DATOS
 
 

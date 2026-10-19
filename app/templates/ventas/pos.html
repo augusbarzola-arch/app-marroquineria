@@ -148,57 +148,62 @@
     </div>
 </div>
 
-<!-- Modal de Confirmación de Venta (Tarea 5) -->
+<!-- Modal de Confirmación de Venta (Tarea 1: Formato Ticket) -->
 <div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-labelledby="modalConfirmarVentaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold" id="modalConfirmarVentaLabel">
-                    <i class="bi bi-shield-check text-primary me-2"></i>Confirmación de Venta
+                    <i class="bi bi-receipt-cutoff text-primary me-2"></i>Resumen de Venta
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="text-secondary small mb-3">
-                    Revise el resumen de los artículos y el medio de pago antes de registrar la operación.
-                </p>
+                <!-- Tarjeta Contenedora Formato Ticket -->
+                <div class="ticket-receipt">
+                    <!-- Encabezado del Ticket -->
+                    <div class="text-center pb-3 mb-3 border-bottom border-dashed">
+                        <i class="bi bi-bag-check fs-2 text-primary d-block mb-1"></i>
+                        <h6 class="fw-bold mb-1 text-uppercase">Ticket de Control de Venta</h6>
+                        <span class="text-muted small" id="modal-ticket-fecha">-</span>
+                    </div>
 
-                <!-- Tabla Resumen de Ítems -->
-                <div class="table-responsive mb-3 border rounded">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="small text-secondary">
-                            <tr>
-                                <th>Artículo</th>
-                                <th>Variante</th>
-                                <th class="text-center">Cant.</th>
-                                <th class="text-end">P. Unitario</th>
-                                <th class="text-end">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modal-sale-items-tbody" class="small">
-                            <!-- Filas dinámicas generadas por pos.js -->
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- Tabla Resumen de Ítems -->
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="small text-secondary border-bottom border-dashed">
+                                <tr>
+                                    <th>Artículo</th>
+                                    <th>Variante</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">P. Unitario</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-sale-items-tbody" class="small">
+                                <!-- Filas dinámicas generadas por pos.js -->
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Resumen de Totales y Medio de Pago -->
-                <div class="card border p-3" style="background-color: var(--bg-surface);">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-sm-6">
-                            <span class="text-muted small d-block">Medio de Pago:</span>
-                            <span class="fw-bold fs-6" id="modal-medio-pago">-</span>
+                    <!-- Desglose Comercial y Totales del Ticket -->
+                    <div class="pt-2 border-top border-dashed">
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Subtotal Lista:</span>
+                            <span class="fw-semibold font-monospace" id="modal-subtotal-lista">$0.00</span>
                         </div>
-                        <div class="col-sm-6 text-sm-end">
-                            <span class="text-muted small d-block">Subtotal Lista:</span>
-                            <span class="fw-semibold" id="modal-subtotal-lista">$0.00</span>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Medio de Pago:</span>
+                            <span class="fw-semibold" id="modal-medio-pago">-</span>
                         </div>
-                        <div class="col-sm-6">
-                            <span class="text-muted small d-block">Ajuste Aplicado:</span>
-                            <span id="modal-ajuste-texto" class="small">-</span>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Ajuste Aplicado:</span>
+                            <span id="modal-ajuste-texto" class="small font-monospace">-</span>
                         </div>
-                        <div class="col-sm-6 text-sm-end">
-                            <span class="text-muted small d-block">Total Final:</span>
-                            <span class="fw-bold text-success fs-3" id="modal-total-final">$0.00</span>
+                        <hr class="border-dashed my-2">
+                        <div class="d-flex justify-content-between align-items-center py-2">
+                            <span class="fw-bold fs-5 text-uppercase">Total Final:</span>
+                            <span class="fw-bold text-success fs-2 font-monospace" id="modal-total-final">$0.00</span>
                         </div>
                     </div>
                 </div>

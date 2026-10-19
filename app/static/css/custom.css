@@ -622,6 +622,33 @@ body {
     opacity: 1;
     margin-top: 0.85rem;
     padding-top: 0.85rem;
-    border-top: 1px solid var(--border-glass);
+    border-top: 1px dashed var(--border-glass);
 }
+
+/* ==========================================================================
+   Ticket Receipt Styles (Modal de Confirmación POS)
+   ========================================================================== */
+.ticket-receipt {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="light"] .ticket-receipt {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.border-dashed {
+    border-style: dashed !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-bs-theme="light"] .border-dashed {
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
 

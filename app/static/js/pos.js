@@ -309,6 +309,13 @@ function openConfirmationModal() {
         return;
     }
 
+    // Fecha y hora del ticket
+    const fechaEl = document.getElementById('modal-ticket-fecha');
+    if (fechaEl) {
+        const ahora = new Date();
+        fechaEl.textContent = ahora.toLocaleDateString('es-AR') + ' ' + ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs';
+    }
+
     // Calcular subtotales
     let subtotalLista = 0;
     const tbody = document.getElementById('modal-sale-items-tbody');
@@ -322,9 +329,9 @@ function openConfirmationModal() {
                     <span class="badge bg-secondary-subtle text-secondary-emphasis border me-1">${escapeHtml(item.nombre_color)}</span>
                     <span class="badge bg-primary-subtle text-primary border">${escapeHtml(item.nombre_tamano)}</span>
                 </td>
-                <td class="text-center fw-bold">${item.cantidad}</td>
-                <td class="text-end text-muted">$${item.precio_lista.toFixed(2)}</td>
-                <td class="text-end fw-bold">$${itemSubtotal.toFixed(2)}</td>
+                <td class="text-center fw-bold font-monospace">${item.cantidad}</td>
+                <td class="text-end text-muted font-monospace">$${item.precio_lista.toFixed(2)}</td>
+                <td class="text-end fw-bold font-monospace">$${itemSubtotal.toFixed(2)}</td>
             </tr>
         `;
     }).join('');
