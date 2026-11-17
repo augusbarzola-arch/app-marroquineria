@@ -23,7 +23,7 @@ class DevolucionService:
 
             # 1. Validar que la venta original y el ítem existan
             cursor.execute("""
-                SELECT dv.cantidad, dv.precio_unitario_cobrado, p.nombre_producto, col.nombre_color, tam.nombre_tamano
+                SELECT dv.renglon_venta, dv.cantidad, dv.precio_unitario_cobrado, p.nombre_producto, col.nombre_color, tam.nombre_tamano
                 FROM detalle_venta dv
                 JOIN variante_producto v ON dv.id_variante = v.id_variante
                 JOIN producto p ON v.id_producto = p.id_producto
@@ -37,15 +37,15 @@ class DevolucionService:
                     f"El artículo seleccionado no pertenece a la venta #{datos.id_venta}."
                 )
 
-            cantidad_vendida, precio_cobrado_orig, nom_prod, col_prod, tam_prod = detalle
+            renglon_venta, cantidad_vendida, precio_cobrado_orig, nom_prod, col_prod, tam_prod = detalle
             precio_cobrado_original = Decimal(str(precio_cobrado_orig))
 
             # 2. Validar que no supere las unidades vendidas no devueltas
             cursor.execute("""
                 SELECT COALESCE(SUM(cantidad), 0)
                 FROM devolucion
-                WHERE id_venta = %s AND id_variante_devuelta = %s
-            """, (datos.id_venta, datos.id_variante_devuelta))
+                WHERE id_venta = %s AND renglon_venta = %s
+            """, (datos.id_venta, renglon_venta))
             ya_devueltas = cursor.fetchone()[0]
 
             disponibles = cantidad_vendida - ya_devueltas
@@ -134,7 +134,7 @@ class DevolucionService:
                 INSERT INTO devolucion (
                     fecha,
                     id_venta,
-                    id_variante_devuelta,
+                    renglon_venta,
                     cantidad,
                     motivo,
                     id_variante_nueva,
@@ -145,7 +145,7 @@ class DevolucionService:
                 RETURNING id_devolucion
             """, (
                 datos.id_venta,
-                datos.id_variante_devuelta,
+                renglon_venta,
                 datos.cantidad,
                 datos.motivo,
                 id_nueva_variante,

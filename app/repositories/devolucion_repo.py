@@ -19,7 +19,8 @@ class DevolucionRepository:
                 d.id_devolucion,
                 d.fecha,
                 d.id_venta,
-                d.id_variante_devuelta,
+                d.renglon_venta,
+                dv.id_variante AS id_variante_devuelta,
                 d.cantidad,
                 d.motivo,
                 d.id_variante_nueva,
@@ -36,7 +37,8 @@ class DevolucionRepository:
                 col_new.nombre_color AS color_nuevo_nombre,
                 tam_new.nombre_tamano AS tamano_nuevo_nombre
             FROM devolucion d
-            JOIN variante_producto v_dev ON d.id_variante_devuelta = v_dev.id_variante
+            JOIN detalle_venta dv ON d.id_venta = dv.id_venta AND d.renglon_venta = dv.renglon_venta
+            JOIN variante_producto v_dev ON dv.id_variante = v_dev.id_variante
             JOIN producto p_dev ON v_dev.id_producto = p_dev.id_producto
             JOIN color col_dev ON v_dev.id_color = col_dev.id_color
             JOIN tamano tam_dev ON v_dev.id_tamano = tam_dev.id_tamano
@@ -105,7 +107,8 @@ class DevolucionRepository:
                 d.id_devolucion,
                 d.fecha,
                 d.id_venta,
-                d.id_variante_devuelta,
+                d.renglon_venta,
+                dv.id_variante AS id_variante_devuelta,
                 d.cantidad,
                 d.motivo,
                 d.id_variante_nueva,
@@ -122,7 +125,8 @@ class DevolucionRepository:
                 tam_new.nombre_tamano AS tamano_nuevo_nombre
             FROM devolucion d
             JOIN venta v ON d.id_venta = v.id_venta
-            JOIN variante_producto v_dev ON d.id_variante_devuelta = v_dev.id_variante
+            JOIN detalle_venta dv ON d.id_venta = dv.id_venta AND d.renglon_venta = dv.renglon_venta
+            JOIN variante_producto v_dev ON dv.id_variante = v_dev.id_variante
             JOIN producto p_dev ON v_dev.id_producto = p_dev.id_producto
             JOIN color col_dev ON v_dev.id_color = col_dev.id_color
             JOIN tamano tam_dev ON v_dev.id_tamano = tam_dev.id_tamano
@@ -138,15 +142,15 @@ class DevolucionRepository:
             return dict(row) if row else None
 
     @staticmethod
-    def get_cantidad_ya_devuelta(id_venta: int, id_variante: int) -> int:
-        """Obtiene la suma de unidades ya devueltas de esa variante en esa venta."""
+    def get_cantidad_ya_devuelta(id_venta: int, renglon_venta: int) -> int:
+        """Obtiene la suma de unidades ya devueltas de ese renglón en esa venta."""
         query = """
             SELECT COALESCE(SUM(cantidad), 0) AS total
             FROM devolucion
-            WHERE id_venta = %s AND id_variante_devuelta = %s
+            WHERE id_venta = %s AND renglon_venta = %s
         """
         with get_db_cursor() as cur:
-            cur.execute(query, (id_venta, id_variante))
+            cur.execute(query, (id_venta, renglon_venta))
             row = cur.fetchone()
             return int(row["total"]) if row else 0
 
@@ -165,7 +169,7 @@ class DevolucionRepository:
                 COALESCE((
                     SELECT SUM(d.cantidad)
                     FROM devolucion d
-                    WHERE d.id_venta = dv.id_venta AND d.id_variante_devuelta = dv.id_variante
+                    WHERE d.id_venta = dv.id_venta AND d.renglon_venta = dv.renglon_venta
                 ), 0) AS cantidad_ya_devuelta
             FROM detalle_venta dv
             JOIN variante_producto v ON dv.id_variante = v.id_variante
