@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentación Final - Marroquinería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+            --accent-purple: #818cf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .slide-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1100px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 2.5rem 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .slide.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide h1 {
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .slide h2 {
+            color: var(--accent-purple);
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.75rem;
+        }
+        .badge-role {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 8px;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        .badge-role.int2 {
+            background: rgba(129, 140, 248, 0.15);
+            color: var(--accent-purple);
+            border-color: rgba(129, 140, 248, 0.3);
+        }
+        .nav-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 3rem;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 1px solid var(--card-border);
+        }
+        .btn-custom {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s;
+        }
+        .btn-custom:hover:not(:disabled) {
+            background: var(--accent);
+            color: #0f172a;
+            border-color: var(--accent);
+        }
+        .btn-custom:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .code-box {
+            background: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            white-space: pre-wrap;
+            margin-top: 0.75rem;
+        }
+        .notes-panel {
+            background: rgba(2, 6, 23, 0.85);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+        .notes-panel strong {
+            color: var(--accent);
+        }
+        .notes-panel.int2 {
+            border-left-color: var(--accent-purple);
+        }
+        .notes-panel.int2 strong {
+            color: var(--accent-purple);
+        }
+        .progress-bar-container {
+            width: 250px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-purple));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slide-container">
+
+        <!-- Slide 1 -->
+        <div class="slide active" id="slide-1">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h1 class="display-4">Sistema de Gestión para Marroquinería</h1>
+            <h4 class="text-muted mb-4">Diseño, Implementación y Optimización de una Base de Datos Relacional</h4>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <p class="lead text-light"><strong>Proyecto Final — Bases de Datos</strong></p>
+                    <p class="text-muted"><i class="bi bi-mortarboard-fill me-2"></i>Presentación Universitaria de Ingeniería / Sistemas</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><strong>Integrantes:</strong></p>
+                    <p class="text-muted mb-0">Augusto Barzola &bull; Lucas Duarte</p>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Buenos días / tardes. Somos Augusto Barzola y Lucas Duarte, y hoy les vamos a presentar nuestro proyecto final para la materia Bases de Datos: un Sistema de Gestión Full Stack para una marroquinería con PostgreSQL, FastAPI y UI Glassmorphism moderna."
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide" id="slide-2">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>¿Qué vamos a ver hoy? (Agenda)</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 1. El problema de negocio y la solución</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 2. Arquitectura del sistema (Stack tecnológico)</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 3. Modelo de datos — DER (13 tablas)</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 4. Normalización en Tercera Forma Normal (3FN)</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 5. Triggers de stock en base de datos</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 6. Integridad en tabla Devolución (FK compuesta)</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 7. Consultas complejas y Álgebra Relacional</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 8. Justificación técnica: SQL directo vs ORM</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 9. Demostración UI/UX: POS y Dashboard</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 10. Metodología de desarrollo asistido con IA</li>
+                        <li class="list-group-item bg-transparent text-light border-0"><i class="bi bi-check-circle-fill text-info me-2"></i> 11. Conclusiones y lecciones aprendidas</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Dividimos la presentación equitativamente: yo voy a profundizar en el modelo de base de datos, normalización, triggers y optimización; y mi compañero presentará la arquitectura del sistema, la interfaz de usuario y las conclusiones."
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide" id="slide-3">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>El Problema y Nuestra Solución</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="p-3 rounded" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <h5 class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>El Problema en la PYME</h5>
+                        <ul>
+                            <li>Control manual de stock (planillas Excel, papel)</li>
+                            <li>Mercadería perdida y descuadres de inventario</li>
+                            <li>Devoluciones no controladas con inconsistencias contables</li>
+                            <li>Sin visibilidad de métricas en tiempo real</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2);">
+                        <h5 class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Nuestra Solución</h5>
+                        <ul>
+                            <li>Base PostgreSQL centralizada con 13 tablas en 3FN</li>
+                            <li>Integridad enforceada por la BD (triggers y FKs)</li>
+                            <li>Módulos: POS táctil, Dashboard analítico, Reportes</li>
+                            <li>Web responsive con modo oscuro y feedback inmediato</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "En una marroquinería existen productos con múltiples variantes (color, material, tamaño). La solución fue construir un sistema donde la base de datos se protege a sí misma, impidiendo inconsistencias sin importar cómo se acceda a los datos."
+            </div>
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide" id="slide-4">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Arquitectura del Sistema — Stack Tecnológico</h2>
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <ul>
+                        <li><strong>Base de Datos:</strong> PostgreSQL — Relacional, ACID, triggers nativos en PL/pgSQL.</li>
+                        <li><strong>Backend:</strong> Python + FastAPI — API REST asíncrona de alto desempeño.</li>
+                        <li><strong>Conector BD:</strong> psycopg2 con <code>ThreadedConnectionPool</code> — Conexión directa sin capas de ORM.</li>
+                        <li><strong>Frontend:</strong> Jinja2 + Bootstrap 5 + Vanilla JS — Templates server-side con alta reactividad.</li>
+                        <li><strong>Diseño Visual:</strong> Dark Mode con Glassmorphism moderno.</li>
+                    </ul>
+                </div>
+                <div class="col-md-5">
+                    <div class="code-box text-center">
+[ Navegador Web ]
+   (Bootstrap 5 + Jinja2)
+          ↕ (HTTP / HTML)
+  [ FastAPI (Python) ]
+          ↕ (psycopg2 Pool)
+[ PostgreSQL (13 Tablas) ]
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel int2">
+                <strong>Guion Hablado (Integrante 2):</strong> "Gracias Augusto Barzola. El sistema sigue una arquitectura por capas limpia y desacoplada. Seleccionamos FastAPI por su velocidad y tipado estricto, y conectamos directo a PostgreSQL usando psycopg2 con pool de conexiones para máxima eficiencia."
+            </div>
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide" id="slide-5">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Modelo de Datos — 13 Tablas Normalizadas (DER)</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <h6 class="text-info"><i class="bi bi-box-seam me-1"></i> Entidades Principales</h6>
+                    <small><code>producto</code>, <code>variante_producto</code>, <code>venta</code>, <code>compra</code></small>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-info"><i class="bi bi-receipt me-1"></i> Entidades de Detalle</h6>
+                    <small><code>detalle_venta</code>, <code>detalle_compra</code>, <code>devolucion</code></small>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-info"><i class="bi bi-tags me-1"></i> Tablas de Dominio</h6>
+                    <small><code>categoria</code>, <code>material</code>, <code>color</code>, <code>tamano</code>, <code>proveedor</code>, <code>medio_pago</code></small>
+                </div>
+            </div>
+            <div class="mt-3 p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border);">
+                <p class="mb-1"><strong>Puntos de rigor relacional implementados:</strong></p>
+                <small class="text-muted">
+                    &bull; Claves primarias compuestas en detalles: <code>(id_venta, renglon_venta)</code> y <code>(id_compra, renglon_compra)</code>.<br>
+                    &bull; Restricciones CHECK para validar cantidades > 0 y precios positivos.<br>
+                    &bull; Constraints UNIQUE para evitar variantes duplicadas y códigos de SKU repetidos.
+                </small>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "El DER cuenta con 13 tablas separadas limpiamente en maestras, detalles transaccionales y dominios. Las tablas de detalle usan claves primarias compuestas, garantizando renglones unívocos por comprobante."
+            </div>
+        </div>
+
+        <!-- Slide 6 -->
+        <div class="slide" id="slide-6">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Normalización en Tercera Forma Normal (3FN)</h2>
+            <p>El diseño erradica redundancias e inconsistencias respetando los principios formales:</p>
+            <div class="table-responsive">
+                <table class="table table-dark table-bordered table-sm">
+                    <thead>
+                        <tr class="text-info">
+                            <th>Forma</th>
+                            <th>Regla Formal</th>
+                            <th>Aplicación en el Proyecto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1FN</strong></td>
+                            <td>Atributos atómicos, sin listas o grupos repetitivos.</td>
+                            <td>Cada variante almacena un único valor por atributo.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2FN</strong></td>
+                            <td>Atributos dependen de la clave primaria completa.</td>
+                            <td>En detalles compuestos, precio y cantidad dependen del renglón completo.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3FN</strong></td>
+                            <td>No existen dependencias transitivas (A &rarr; B &rarr; C).</td>
+                            <td>Color, material y tamaño tienen sus propias tablas referenciadas por ID.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Demostramos que la normalización no es solo teoría: al aislar colores o materiales en tablas satélites, evitamos anomalías de actualización. Renombrar un color requiere un solo UPDATE, sin tocar millones de ventas históricas."
+            </div>
+        </div>
+
+        <!-- Slide 7 -->
+        <div class="slide" id="slide-7">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Triggers — La Base de Datos se Protege a Sí Misma</h2>
+            <p class="mb-1">Automatización transaccional nativa con PL/pgSQL:</p>
+            <div class="code-box">
+CREATE OR REPLACE FUNCTION actualizar_stock_venta() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE variante_producto
+    SET stock_actual = stock_actual - NEW.cantidad
+    WHERE id_variante = NEW.id_variante;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_stock_venta
+AFTER INSERT ON detalle_venta
+FOR EACH ROW EXECUTE FUNCTION actualizar_stock_venta();
+            </div>
+            <small class="text-muted">* Análogamente, <code>detalle_compra</code> cuenta con su trigger inverso para sumar stock al ingresar mercadería.</small>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Uno de los puntos clave del examen: la actualización de stock NO se delega al frontend ni al backend. Si alguien inserta una venta directamente desde consola SQL o un script batch, el trigger garantiza la actualización atómica del inventario."
+            </div>
+        </div>
+
+        <!-- Slide 8 -->
+        <div class="slide" id="slide-8">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Diseño Crítico: Integridad en Devoluciones (FK Compuesta)</h2>
+            <p class="text-warning mb-2"><i class="bi bi-shield-lock-fill me-1"></i> ¿Cómo evitar devoluciones fraudulentas o 'fantasma'?</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="code-box">
+CREATE TABLE devolucion (
+    id_devolucion SERIAL PRIMARY KEY,
+    id_venta INTEGER NOT NULL,
+    renglon_venta INTEGER NOT NULL,
+    cantidad_devuelta INT CHECK (cantidad_devuelta > 0),
+    
+    -- FK COMPUESTA:
+    CONSTRAINT fk_devolucion_detalle
+        FOREIGN KEY (id_venta, renglon_venta)
+        REFERENCES detalle_venta(id_venta, renglon_venta)
+);
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded" style="background: rgba(255,255,255,0.05);">
+                        <h6>¿Por qué no una FK simple a <code>id_venta</code>?</h6>
+                        <p class="small text-muted">Una FK simple validaría que la venta existe, pero permitiría registrar la devolución de un producto que jamás formó parte de ese ticket.</p>
+                        <p class="small text-info mb-0"><strong>Garantía:</strong> La clave foránea compuesta obliga al motor a validar la existencia exacta del renglón vendido.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Este es un punto de alta valoración en la cátedra: modelamos la relación con detalle_venta a través de una foreign key compuesta sobre (id_venta, renglon_venta). El motor rechaza físicamente cualquier intento de devolver un ítem inexistente en esa venta."
+            </div>
+        </div>
+
+        <!-- Slide 9 -->
+        <div class="slide" id="slide-9">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Consultas Complejas y Álgebra Relacional (Push-Down)</h2>
+            <p>Optimización formal modelada mediante árboles de álgebra relacional:</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-danger">❌ Árbol Ineficiente (Filtro Tardío)</h6>
+                    <div class="code-box">
+π (nombre, total_vendido)
+          |
+γ (SUM por producto)
+          |
+σ (fecha = HOY)  <-- FILTRO AL FINAL
+          |
+        ⋈ JOIN (Todas las tablas)
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-success">✅ Árbol Optimizado (Push-Down)</h6>
+                    <div class="code-box">
+π (nombre, total_vendido)
+          |
+γ (SUM por producto)
+          |
+        ⋈ JOIN
+       /      \
+σ (fecha=HOY)  detalle_venta
+     |
+   venta  <-- Filtro empujado a la hoja
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Aplicamos la regla heurística de Push-Down de selecciones: bajar la condición sigma (fecha = hoy) lo más cerca posible de las hojas. De este modo, los JOINs operan sobre conjuntos de datos reducidos, minimizando memoria y tiempo de CPU."
+            </div>
+        </div>
+
+        <!-- Slide 10 -->
+        <div class="slide" id="slide-10">
+            <span class="badge-role"><i class="bi bi-person-fill"></i> Augusto Barzola</span>
+            <h2>Decisión de Arquitectura: SQL Directo vs ORM</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="p-3 rounded h-100" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <h6 class="text-danger">¿Por qué NO un ORM (SQLAlchemy / Django)?</h6>
+                        <ul class="small text-muted">
+                            <li>Genera 'queries fantasma' N+1 difíciles de prever.</li>
+                            <li>Oculta el control fino de transacciones (BEGIN/COMMIT).</li>
+                            <li>Agrega una capa pesada de abstracción innecesaria para un proyecto de Bases de Datos.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded h-100" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2);">
+                        <h6 class="text-info">Ventajas de psycopg2 directo:</h6>
+                        <ul class="small text-muted">
+                            <li>Control absoluto del plan de ejecución SQL.</li>
+                            <li>Manejo explícito de bloqueos y cursores (<code>RealDictCursor</code>).</li>
+                            <li>Pool de conexiones thread-safe con <code>ThreadedConnectionPool</code>.</li>
+                            <li>Demostración pedagógica del dominio de SQL puro.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel">
+                <strong>Guion Hablado (Integrante 1):</strong> "Elegir psycopg2 directo nos permitió demostrar dominio pleno del estándar SQL y las capacidades del motor. Gestionamos conexiones mediante un ThreadedConnectionPool y delimitamos transacciones explícitas."
+            </div>
+        </div>
+
+        <!-- Slide 11 -->
+        <div class="slide" id="slide-11">
+            <span class="badge-role int2"><i class="bi bi-person-fill"></i> Lucas Duarte</span>
+            <h2>Interfaz de Usuario: Punto de Venta y Dashboard</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-info"><i class="bi bi-cart-check-fill me-2"></i>Punto de Venta (POS)</h5>
+                    <ul class="small text-muted">
+                        <li>Búsqueda reactiva de productos y filtrado por variantes.</li>
+                        <li>Cálculo en vivo de recargos / descuentos por medio de pago.</li>
+                        <li><strong>Modal de confirmación tipo ticket:</strong> revisión obligatoria antes del commit en base de datos.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-info"><i class="bi bi-speedometer2 me-2"></i>Dashboard Dinámico</h5>
+                    <ul class="small text-muted">
+                        <li>Tarjetas de métricas en tiempo real (recaudación, stock crítico).</li>
+                        <li><strong>Tarjetas expandibles con animación CSS:</strong> revelan tablas detalladas con un solo clic.</li>
+                        <li>Diseño Glassmorphism optimizado para baja fatiga visual.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="notes-panel int2">
+                <strong>Guion Hablado (Integrante 2):</strong> "Gracias Augusto Barzola. En la interfaz priorizamos la experiencia del usuario y la prevención de errores: incorporamos un modal de confirmación en el POS que emula el ticket fiscal antes de impactar en la base de datos, y métricas expandibles en el Dashboard."
+            </div>
+        </div>
+
+        <!-- Slide 12 -->
+        <div class="slide" id="slide-12">
+            <span class="badge-role int2"><i class="bi bi-person-fill"></i> Lucas Duarte</span>
+            <h2>Desarrollo Asistido por IA — Protocolo por Fases</h2>
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <p class="small text-muted">Utilizamos <strong>Antigravity</strong> (Google DeepMind) siguiendo un protocolo sistemático:</p>
+                    <ol class="small text-muted">
+                        <li><strong>Fase 1:</strong> Modelado conceptual y DER en 3FN.</li>
+                        <li><strong>Fase 2:</strong> DDL, constraints y triggers PL/pgSQL.</li>
+                        <li><strong>Fase 3:</strong> Backend FastAPI con psycopg2 y connection pooling.</li>
+                        <li><strong>Fase 4:</strong> Frontend con templates Jinja2 y componentes UI reactivos.</li>
+                        <li><strong>Fase 5:</strong> Auditoría de integridad, pruebas de concurrencia y optimización.</li>
+                    </ol>
+                </div>
+                <div class="col-md-5">
+                    <div class="p-3 rounded text-center" style="background: rgba(129, 140, 248, 0.1); border: 1px solid rgba(129, 140, 248, 0.3);">
+                        <i class="bi bi-cpu-fill text-info display-4"></i>
+                        <h6 class="mt-2 text-light">La IA como Co-piloto</h6>
+                        <small class="text-muted">El equipo definió la arquitectura y validó rigurosamente cada línea de código generado.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="notes-panel int2">
+                <strong>Guion Hablado (Integrante 2):</strong> "El desarrollo asistido por IA nos permitió acelerar la implementación de código repetitivo, pero la toma de decisiones arquitectónicas y la validación de integridad referencial fue guiada y auditada 100% por nosotros."
+            </div>
+        </div>
+
+        <!-- Slide 13 -->
+        <div class="slide" id="slide-13">
+            <span class="badge-role int2"><i class="bi bi-person-fill"></i> Lucas Duarte</span>
+            <h2>Conclusiones y Cierre</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="p-3 rounded" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2);">
+                        <h6 class="text-success"><i class="bi bi-trophy-fill me-2"></i>Objetivos Cumplidos</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Sistema 100% operativo para el negocio de marroquinería.</li>
+                            <li>13 tablas en 3FN libres de anomalías de modificación.</li>
+                            <li>Integridad enforceada en motor mediante triggers y constraints.</li>
+                            <li>Consultas optimizadas mediante álgebra relacional aplicada.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2);">
+                        <h6 class="text-info"><i class="bi bi-lightbulb-fill me-2"></i>Aprendizajes Clave</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>La robustez de los datos debe residir en el motor relacional.</li>
+                            <li>El control explícito de transacciones supera a la abstracción ciega.</li>
+                            <li>Una UX bien diseñada evita errores en la base de datos.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <h4 class="text-light">¡Muchas gracias por su atención!</h4>
+                <p class="text-muted">Quedamos a disposición para las preguntas de la cátedra.</p>
+            </div>
+            <div class="notes-panel int2">
+                <strong>Guion Hablado (Integrante 2):</strong> "Concluimos que diseñar una base de datos sólida y normalizada simplifica exponencialmente el desarrollo de todo el sistema. Estamos listos para sus preguntas. Muchas gracias."
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Barra de Navegación Inferior -->
+    <div class="nav-controls">
+        <button class="btn btn-custom" id="prevBtn" onclick="changeSlide(-1)"><i class="bi bi-arrow-left me-1"></i> Anterior</button>
+        <div class="d-flex align-items-center gap-3">
+            <span id="slideCounter" class="text-muted small">1 / 13</span>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleNotes()" id="notesBtn"><i class="bi bi-chat-quote me-1"></i> Guion</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()"><i class="bi bi-arrows-fullscreen"></i></button>
+        </div>
+        <button class="btn btn-custom" id="nextBtn" onclick="changeSlide(1)">Siguiente <i class="bi bi-arrow-right ms-1"></i></button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 13;
+
+        function showSlide(n) {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            currentSlide = n;
+            if (currentSlide > totalSlides) currentSlide = 1;
+            if (currentSlide < 1) currentSlide = totalSlides;
+
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
+            document.getElementById('slideCounter').innerText = `${currentSlide} / ${totalSlides}`;
+            document.getElementById('progressBar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+            document.getElementById('prevBtn').disabled = (currentSlide === 1);
+            document.getElementById('nextBtn').disabled = (currentSlide === totalSlides);
+        }
+
+        function changeSlide(step) {
+            showSlide(currentSlide + step);
+        }
+
+        function toggleNotes() {
+            const notes = document.querySelectorAll('.notes-panel');
+            notes.forEach(n => {
+                n.style.display = (n.style.display === 'none') ? 'block' : 'none';
+            });
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                changeSlide(-1);
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            }
+        });
+
+        showSlide(1);
+    </script>
+</body>
+</html>

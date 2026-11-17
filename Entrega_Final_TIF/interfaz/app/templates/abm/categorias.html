@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Botón Nuevo -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-tag text-primary me-2"></i>Gestión de Categorías</h3>
+            <p class="text-secondary mb-0">Administración de familias de productos del catálogo</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i> Nueva Categoría
+        </button>
+    </div>
+
+    <!-- Buscador -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/categorias" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Buscar por nombre o descripción..." value="{{ search or '' }}">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-secondary">Buscar</button>
+                    {% if search %}
+                    <a href="/categorias" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+                <div class="col text-end text-muted small">
+                    Total: <strong>{{ total }}</strong> registros
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Categorías -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Nombre de Categoría</th>
+                        <th>Descripción</th>
+                        <th class="text-end" style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted fw-semibold">#{{ item.id_categoria }}</td>
+                        <td class="fw-bold">{{ item.nombre_categoria }}</td>
+                        <td class="text-secondary">{{ item.descripcion or '-' }}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openEditModal({{ item.id_categoria }}, '{{ item.nombre_categoria | e }}', '{{ (item.descripcion or '') | e }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteItem({{ item.id_categoria }}, '{{ item.nombre_categoria | e }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No se encontraron categorías registradas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Alta -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createForm" onsubmit="handleCreate(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nueva Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_categoria" class="form-control" required maxlength="100" placeholder="Ej: Billeteras">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3" maxlength="255" placeholder="Descripción breve..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveCreate">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edición -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm" onsubmit="handleUpdate(event)">
+                <input type="hidden" name="id_categoria" id="edit_id_categoria">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Editar Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_categoria" id="edit_nombre_categoria" class="form-control" required maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea name="descripcion" id="edit_descripcion" class="form-control" rows="3" maxlength="255"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveEdit">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+async function handleCreate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('btnSaveCreate');
+    btn.disabled = true;
+
+    const data = {
+        nombre_categoria: form.nombre_categoria.value.trim(),
+        descripcion: form.descripcion.value.trim() || null
+    };
+
+    try {
+        const res = await fetch('/categorias', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al crear la categoría.');
+
+        window.location.href = '/categorias?msg=' + encodeURIComponent('Categoría creada correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function openEditModal(id, nombre, desc) {
+    document.getElementById('edit_id_categoria').value = id;
+    document.getElementById('edit_nombre_categoria').value = nombre;
+    document.getElementById('edit_descripcion').value = desc || '';
+    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+}
+
+async function handleUpdate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id_categoria.value;
+    const btn = document.getElementById('btnSaveEdit');
+    btn.disabled = true;
+
+    const data = {
+        nombre_categoria: form.nombre_categoria.value.trim(),
+        descripcion: form.descripcion.value.trim() || null
+    };
+
+    try {
+        const res = await fetch(`/categorias/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al actualizar la categoría.');
+
+        window.location.href = '/categorias?msg=' + encodeURIComponent('Categoría actualizada correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function deleteItem(id, nombre) {
+    confirmModal(
+        'Eliminar Categoría',
+        `¿Está seguro de que desea eliminar la categoría "${nombre}"?`,
+        async () => {
+            try {
+                const res = await fetch(`/categorias/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar el registro.');
+
+                window.location.href = '/categorias?msg=' + encodeURIComponent('Categoría eliminada con éxito.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}

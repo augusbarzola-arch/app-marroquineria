@@ -35,16 +35,23 @@ class ForeignKeyConstraintError(DatabaseError):
 
 
 def init_db_pool() -> pool.ThreadedConnectionPool:
-    """Inicializa el pool de conexiones seguras y multihilo a PostgreSQL."""
+    """Inicializa el pool de conexiones seguras y multihilo a PostgreSQL (local o Supabase)."""
     global _pool
     if _pool is None or _pool.closed:
         try:
             logger.info("Inicializando ThreadedConnectionPool a PostgreSQL...")
-            _pool = pool.ThreadedConnectionPool(
-                minconn=settings.DB_MIN_CONN,
-                maxconn=settings.DB_MAX_CONN,
-                **settings.db_params
-            )
+            if settings.DATABASE_URL:
+                _pool = pool.ThreadedConnectionPool(
+                    minconn=settings.DB_MIN_CONN,
+                    maxconn=settings.DB_MAX_CONN,
+                    dsn=settings.DATABASE_URL
+                )
+            else:
+                _pool = pool.ThreadedConnectionPool(
+                    minconn=settings.DB_MIN_CONN,
+                    maxconn=settings.DB_MAX_CONN,
+                    **settings.db_params
+                )
             logger.info("Pool de conexiones iniciado correctamente.")
         except Exception as e:
             logger.error("Fallo al inicializar el pool de conexiones: %s", e)

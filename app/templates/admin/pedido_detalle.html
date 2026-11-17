@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Pedido {{ pedido.codigo_seguimiento }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+    <!-- Breadcrumb y Volver -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="/admin/ecommerce/pedidos" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-1"></i> Volver a Pedidos
+            </a>
+            <span class="fs-5 fw-bold text-dark">Pedido {{ pedido.codigo_seguimiento }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if pedido.estado == 'PAGADO' %}
+            <span class="badge bg-success fs-6 px-3 py-2 rounded-pill"><i class="bi bi-check-circle me-1"></i>PAGADO</span>
+            {% elif pedido.estado == 'ENVIADO' %}
+            <span class="badge bg-info text-dark fs-6 px-3 py-2 rounded-pill"><i class="bi bi-truck me-1"></i>ENVIADO</span>
+            {% elif pedido.estado == 'CANCELADO' %}
+            <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i>CANCELADO</span>
+            {% else %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill"><i class="bi bi-clock-history me-1"></i>PENDIENTE DE PAGO</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Columna Izquierda: Información del Cliente y Despacho Moto Uber -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-transparent py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-person-circle text-primary me-2"></i>Datos del Cliente</h6>
+                </div>
+                <div class="card-body p-3 small">
+                    <div class="mb-2"><strong>Nombre:</strong> {{ pedido.nombre_cliente }}</div>
+                    <div class="mb-2"><strong>Teléfono / WhatsApp:</strong> <a href="https://wa.me/549{{ pedido.telefono_cliente | replace('-', '') | replace(' ', '') }}" target="_blank" class="text-success fw-bold text-decoration-none"><i class="bi bi-whatsapp me-1"></i>{{ pedido.telefono_cliente }}</a></div>
+                    <div class="mb-2"><strong>Email:</strong> {{ pedido.email_cliente }}</div>
+                    <div><strong>Fecha:</strong> {{ pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                </div>
+            </div>
+
+            <!-- Datos para Pedir el Moto Uber -->
+            <div class="card border-0 shadow-sm mb-3 border-start border-4 border-warning">
+                <div class="card-header bg-transparent py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-bicycle text-warning me-2"></i>Despacho Moto Uber (Paraná)</h6>
+                </div>
+                <div class="card-body p-3 small">
+                    <div class="mb-2"><strong>Zona:</strong> <span class="badge bg-dark">{{ pedido.zona_envio }}</span></div>
+                    <div class="mb-2"><strong>Dirección Exacta:</strong> <span class="fw-bold text-dark">{{ pedido.direccion_envio }}</span></div>
+                    <div class="mb-2"><strong>Costo cobrado de envío:</strong> ${{ "{:,.2f}".format(pedido.costo_envio) }}</div>
+                    {% if pedido.observaciones %}
+                    <div class="p-2 bg-light rounded border text-muted mt-2">
+                        <strong>Nota del cliente:</strong> {{ pedido.observaciones }}
+                    </div>
+                    {% endif %}
+                    <div class="mt-3">
+                        <small class="text-muted d-block mb-1">Cambiar estado del envío:</small>
+                        <form method="POST" action="/admin/ecommerce/pedidos/{{ pedido.id_pedido }}/estado" class="d-flex gap-2">
+                            <select name="nuevo_estado" class="form-select form-select-sm">
+                                <option value="PENDIENTE_PAGO" {% if pedido.estado == 'PENDIENTE_PAGO' %}selected{% endif %}>Pendiente Pago</option>
+                                <option value="PAGADO" {% if pedido.estado == 'PAGADO' %}selected{% endif %}>Pagado (Listo p/ moto)</option>
+                                <option value="ENVIADO" {% if pedido.estado == 'ENVIADO' %}selected{% endif %}>Enviado (Moto en viaje)</option>
+                                <option value="CANCELADO" {% if pedido.estado == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-dark">Actualizar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Transferencia y Comprobante -->
+            {% if pedido.metodo_pago == 'TRANSFERENCIA' %}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-receipt text-success me-2"></i>Comprobante de Pago</h6>
+                </div>
+                <div class="card-body p-3 text-center">
+                    {% if pedido.comprobante_url %}
+                        <div class="mb-3 border rounded p-2 bg-light" style="max-height: 250px; overflow: hidden;">
+                            <img src="{{ pedido.comprobante_url }}" alt="Comprobante" class="img-fluid rounded" style="max-height: 230px; object-fit: contain;">
+                        </div>
+                        <a href="{{ pedido.comprobante_url }}" target="_blank" class="btn btn-sm btn-outline-primary mb-3">
+                            <i class="bi bi-arrows-fullscreen me-1"></i> Ver comprobante a tamaño completo
+                        </a>
+                    {% else %}
+                        <div class="py-4 text-muted small">
+                            <i class="bi bi-image fs-2 text-secondary opacity-50 d-block mb-1"></i>
+                            El cliente aún no adjuntó la foto del comprobante.
+                        </div>
+                    {% endif %}
+
+                    {% if pedido.estado == 'PENDIENTE_PAGO' %}
+                    <div class="border-top pt-3">
+                        <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm" onclick="aprobarPago({{ pedido.id_pedido }})">
+                            <i class="bi bi-check2-circle me-1"></i> Aprobar Pago y Descontar Stock
+                        </button>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            Al hacer clic, el stock se descontará automáticamente de la base de datos y se generará el registro oficial de venta.
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Columna Derecha: Ítems y Auditoría -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-transparent py-3">
+                    <h6 class="fw-bold mb-0">Artículos del Pedido</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Variante (Color / Talle)</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Precio Unit.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for it in pedido.detalles %}
+                            <tr>
+                                <td>
+                                    <strong class="text-dark">{{ it.nombre_producto }}</strong>
+                                    {% if it.sku %}<small class="text-muted d-block">SKU: {{ it.sku }}</small>{% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ it.nombre_color }}</span>
+                                    <span class="badge bg-light text-dark border">Talle: {{ it.nombre_tamano }}</span>
+                                </td>
+                                <td class="text-center fw-bold">{{ it.cantidad }}</td>
+                                <td class="text-end">${{ "{:,.2f}".format(it.precio_unitario_cobrado) }}</td>
+                                <td class="text-end fw-bold">${{ "{:,.2f}".format(it.subtotal) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="small">
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">Subtotal Artículos:</td>
+                                <td class="text-end fw-semibold">${{ "{:,.2f}".format(pedido.subtotal) }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">Costo Envío (Moto Uber):</td>
+                                <td class="text-end fw-semibold">
+                                    {% if pedido.costo_envio == 0 %}
+                                    <span class="text-success fw-bold">GRATIS</span>
+                                    {% else %}
+                                    ${{ "{:,.2f}".format(pedido.costo_envio) }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="fs-6 border-top">
+                                <td colspan="4" class="text-end fw-bold">TOTAL PEDIDO:</td>
+                                <td class="text-end fw-bold text-success fs-5">${{ "{:,.2f}".format(pedido.total) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Historial Técnico / Pasarelas -->
+            <div class="card border-0 shadow-sm p-3 small bg-light">
+                <h6 class="fw-bold mb-2">Metadatos de la Transacción</h6>
+                <div class="row g-2 text-muted">
+                    <div class="col-sm-6"><strong>Método de Pago:</strong> {{ pedido.metodo_pago }}</div>
+                    <div class="col-sm-6"><strong>ID Pedido BD:</strong> #{{ pedido.id_pedido }}</div>
+                    {% if pedido.mp_preference_id %}
+                    <div class="col-sm-6"><strong>Preference ID Mercado Pago:</strong> {{ pedido.mp_preference_id }}</div>
+                    {% endif %}
+                    {% if pedido.mp_payment_id %}
+                    <div class="col-sm-6"><strong>Payment ID Mercado Pago:</strong> {{ pedido.mp_payment_id }}</div>
+                    {% endif %}
+                    {% if pedido.fecha_expiracion %}
+                    <div class="col-sm-6"><strong>Expira el:</strong> {{ pedido.fecha_expiracion.strftime('%d/%m/%Y %H:%M') }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function aprobarPago(idPedido) {
+        if (!confirm('¿Confirmas que recibiste la transferencia bancaria en la cuenta del negocio? Se descontará el stock inmediatamente.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/admin/ecommerce/pedidos/${idPedido}/aprobar`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Error al aprobar el pago.');
+
+            alert('¡Pago aprobado con éxito! Stock descontado y venta registrada.');
+            window.location.reload();
+        } catch (err) {
+            alert('Atención: ' + err.message);
+        }
+    }
+</script>
+{% endblock %}

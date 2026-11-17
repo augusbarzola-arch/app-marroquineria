@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Ventas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Acción -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-receipt text-primary me-2"></i>Historial de Ventas</h3>
+            <p class="text-secondary mb-0">Registro histórico de transacciones comerciales y comprobantes emitidos</p>
+        </div>
+        <a href="/ventas/pos" class="btn btn-primary">
+            <i class="bi bi-cart-plus me-1"></i> Nueva Venta (F2)
+        </a>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/ventas/historial" class="row g-2 align-items-center">
+                <!-- Fecha Desde -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ fecha_desde or '' }}">
+                </div>
+
+                <!-- Fecha Hasta -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Fecha Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ fecha_hasta or '' }}">
+                </div>
+
+                <!-- Medio de Pago -->
+                <div class="col-md-3">
+                    <label class="form-label small mb-1 text-muted">Medio de Pago</label>
+                    <select name="id_medio_pago" class="form-select form-select-sm">
+                        <option value="">Todos los medios de pago</option>
+                        {% for mp in medios_pago %}
+                        <option value="{{ mp.id_medio_pago }}" {% if selected_medio_pago == mp.id_medio_pago %}selected{% endif %}>
+                            {{ mp.nombre_medio }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="col-md-3 d-flex align-items-end gap-1 mt-auto">
+                    <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+                    {% if fecha_desde or fecha_hasta or selected_medio_pago %}
+                    <a href="/ventas/historial" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    {% endif %}
+                    <div class="ms-auto text-end text-muted small">
+                        Total: <strong>{{ total }}</strong> ventas
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Ventas -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Nº Venta</th>
+                        <th>Fecha y Hora</th>
+                        <th>Medio de Pago</th>
+                        <th class="text-center">Ítems</th>
+                        <th class="text-center">Unidades</th>
+                        <th class="text-end">Monto Total</th>
+                        <th class="text-end" style="width: 140px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in ventas %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ "%05d"|format(v.id_venta) }}</td>
+                        <td>
+                            <i class="bi bi-calendar-event me-1 text-muted"></i>
+                            {{ v.fecha_hora.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+                                {{ v.nombre_medio }}
+                            </span>
+                            {% if v.porcentaje_descuento_recargo != 0 %}
+                            <small class="text-muted ms-1">({{ v.porcentaje_descuento_recargo }}%)</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border px-2">
+                                {{ v.cantidad_items }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-semibold">
+                            {{ v.unidades_totales }}
+                        </td>
+                        <td class="text-end fw-bold text-success fs-6">
+                            ${{ "%.2f"|format(v.monto_total) }}
+                        </td>
+                        <td class="text-end">
+                            <a href="/ventas/{{ v.id_venta }}" class="btn btn-sm btn-outline-info me-1" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/ventas/{{ v.id_venta }}/comprobante" class="btn btn-sm btn-outline-primary" title="Imprimir Comprobante">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-receipt fs-2 d-block mb-2"></i>
+                            No se encontraron ventas registradas con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_medio_pago %}&id_medio_pago={{ selected_medio_pago }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_medio_pago %}&id_medio_pago={{ selected_medio_pago }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}{% if selected_medio_pago %}&id_medio_pago={{ selected_medio_pago }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

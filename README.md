@@ -252,6 +252,107 @@ Pestañas interactivas con filtros de fechas y exportación en **CSV** (compatib
 
 ---
 
+## 🛒 Módulo de E-Commerce Integrado
+
+El sistema incorpora una tienda pública completa y un panel administrativo para pedidos online en Paraná, Entre Ríos, compartiendo el mismo inventario en tiempo real con el POS.
+
+### 💰 Lógica Matemática de Precios Comerciales
+El sistema maneja automáticamente la estructura comercial requerida:
+* **Precio Base ($P_{base}$):** Corresponde al precio de lista tradicional del producto en mostrador.
+* **Precio Lista Web ($P_{web}$):** Se calcula con un recargo financiero del 25% y un colchón logístico del 5%:
+  $$P_{web} = (P_{base} \times 1.25) \times 1.05$$
+* **Precio Transferencia ($P_{transf}$):** Aplica un 20% de descuento directo sobre el precio lista web, retornando al valor original:
+  $$P_{transf} = P_{web} \times 0.80$$
+* En el catálogo y carrito se visualiza el **Precio Lista Web tachado** y el **Precio Transferencia resaltado en verde**, informando el ahorro exacto.
+
+### 🛵 Envíos con Moto Uber (Paraná)
+* **Envío GRATIS:** Si el subtotal de la compra es igual o superior a **$100.000**, el costo de envío es $0.
+* **Tarifa fija por zona:** Si no alcanza el monto mínimo, se cobra automáticamente:
+  * Zona Centro: **$2.500**
+  * Zona Norte: **$3.500**
+  * Zona Sur: **$4.000**
+* Los pedidos quedan registrados con la dirección exacta y observaciones para que el dueño solicite el viaje manual en la app de Uber.
+
+### 💳 Métodos de Pago
+1. **Transferencia Bancaria:**
+   - Descuento del 20% OFF automático.
+   - Genera orden en estado `PENDIENTE_PAGO` con datos bancarios (Alias, CBU, Titular).
+   - El cliente sube la captura de su comprobante desde `/tienda/pedido/{codigo}`.
+   - Cuenta con una ventana de **24 horas** antes de expirar automáticamente.
+   - El administrador revisa el comprobante en `/admin/ecommerce/pedidos/{id}` y presiona **"Aprobar Pago"**, descontando el stock con bloqueo `FOR UPDATE` e impactando la venta en el POS.
+2. **Mercado Pago (Checkout Pro):**
+   - El cliente abona el Precio Lista Web con tarjeta de crédito, débito o saldo en cuenta.
+   - Integrado con la API oficial de Mercado Pago (`mercadopago.SDK`).
+   - Webhook oficial (`/api/tienda/webhook/mercadopago`) con **idempotencia garantizada** (`mp_webhook_log`), validación de firma y bloqueo atómico de variantes `FOR UPDATE`.
+
+### 🛡️ Detección de Fallas y Casos Extremos
+* **Concurrencia y Sobreventa:** Transacciones protegidas con `SELECT ... FOR UPDATE` sobre la tabla `variante_producto`.
+* **Idempotencia de Webhook:** Registro único de eventos en `mp_webhook_log`. Si Mercado Pago reintenta la notificación, el sistema responde 200 sin duplicar ventas ni descontar stock dos veces.
+* **Abandono de Pedidos:** Tarea automática en segundo plano con `APScheduler` que cancela pedidos de transferencia sin pagar tras 24 horas.
+* **Backups Automáticos Diarios:** Tarea programada a las 02:00 AM que genera un volcado comprimido en `backups/backup_marroquineria_YYYYMMDD_HHMMSS.sql.gz` y purga respaldos con más de 30 días de antigüedad.
+
+---
+
+## 🌐 Exposición a Internet con Cloudflare Tunnel
+
+Para permitir compras online y recepción de webhooks desde la PC local sin abrir puertos en el router:
+
+1. **Instalar cloudflared:**
+   ```powershell
+   winget install --id Cloudflare.cloudflared
+   ```
+2. **Ejecutar el supervisor con auto-reinicio:**
+   ```bash
+   python tunnel_runner.py
+   ```
+3. El script levantará el túnel seguro hacia `http://127.0.0.1:8000`, detectará la URL pública HTTPS asignada (ej: `https://tu-tienda.trycloudflare.com`) y, en caso de microcortes de internet, reconectará el túnel automáticamente.
+
+---
+
+## ⚙️ Configuración del Archivo `.env`
+
+Copia `.env.example` a `.env` y ajusta las credenciales:
+
+```ini
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=marroquineria
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+# Servidor y URL pública
+APP_HOST=127.0.0.1
+APP_PORT=8000
+DEBUG=True
+BASE_URL=https://tu-tunel.trycloudflare.com
+
+# Pasarela Mercado Pago
+MP_ACCESS_TOKEN=APP_USR-tu-access-token
+MP_WEBHOOK_SECRET=tu-webhook-secret
+
+# Datos Bancarios para Transferencias
+BANK_ALIAS=marroquineria.parana
+BANK_CBU=0000003100010000000000
+BANK_TITULAR=Marroquineria Parana
+BANK_BANCO=Banco de Entre Rios
+
+# Envíos en Paraná
+ENVIO_GRATIS_MINIMO=100000.00
+COSTO_ENVIO_CENTRO=2500.00
+COSTO_ENVIO_NORTE=3500.00
+COSTO_ENVIO_SUR=4000.00
+
+# Notificaciones por Correo (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASSWORD=tu-contraseña-de-aplicacion
+NOTIFICATION_EMAIL=dueno@marroquineria.com
+```
+
+---
+
 ## ⌨️ Atajos de Teclado Globales
 
 | Tecla | Acción |

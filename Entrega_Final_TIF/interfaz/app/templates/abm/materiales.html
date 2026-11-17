@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Materiales{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Botón Nuevo -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-layers text-primary me-2"></i>Gestión de Materiales</h3>
+            <p class="text-secondary mb-0">Administración de tipos de materiales (cuero vacuno, lona, sintético, etc.)</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Material
+        </button>
+    </div>
+
+    <!-- Buscador -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/materiales" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Buscar por nombre..." value="{{ search or '' }}">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-secondary">Buscar</button>
+                    {% if search %}
+                    <a href="/materiales" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+                <div class="col text-end text-muted small">
+                    Total: <strong>{{ total }}</strong> registros
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Materiales -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Nombre del Material</th>
+                        <th class="text-end" style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted fw-semibold">#{{ item.id_material }}</td>
+                        <td class="fw-bold">{{ item.nombre_material }}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openEditModal({{ item.id_material }}, '{{ item.nombre_material | e }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteItem({{ item.id_material }}, '{{ item.nombre_material | e }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No se encontraron materiales registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Alta -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createForm" onsubmit="handleCreate(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nuevo Material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre del Material <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_material" class="form-control" required maxlength="50" placeholder="Ej: Cuero Descarne">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveCreate">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edición -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm" onsubmit="handleUpdate(event)">
+                <input type="hidden" name="id_material" id="edit_id_material">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Editar Material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre del Material <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre_material" id="edit_nombre_material" class="form-control" required maxlength="50">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveEdit">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+async function handleCreate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('btnSaveCreate');
+    btn.disabled = true;
+
+    const data = {
+        nombre_material: form.nombre_material.value.trim()
+    };
+
+    try {
+        const res = await fetch('/materiales', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al crear el material.');
+
+        window.location.href = '/materiales?msg=' + encodeURIComponent('Material creado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function openEditModal(id, nombre) {
+    document.getElementById('edit_id_material').value = id;
+    document.getElementById('edit_nombre_material').value = nombre;
+    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+}
+
+async function handleUpdate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id_material.value;
+    const btn = document.getElementById('btnSaveEdit');
+    btn.disabled = true;
+
+    const data = {
+        nombre_material: form.nombre_material.value.trim()
+    };
+
+    try {
+        const res = await fetch(`/materiales/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al actualizar el material.');
+
+        window.location.href = '/materiales?msg=' + encodeURIComponent('Material actualizado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function deleteItem(id, nombre) {
+    confirmModal(
+        'Eliminar Material',
+        `¿Está seguro de que desea eliminar el material "${nombre}"?`,
+        async () => {
+            try {
+                const res = await fetch(`/materiales/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar el registro.');
+
+                window.location.href = '/materiales?msg=' + encodeURIComponent('Material eliminado con éxito.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}

@@ -7,7 +7,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings, BASE_DIR
 from app.database import init_db_pool, close_db_pool
-from app.routers import abm, productos, stock, ventas, compras, devoluciones, dashboard, reportes
+from app.services.scheduler import iniciar_scheduler, detener_scheduler
+from app.routers import abm, productos, stock, ventas, compras, devoluciones, dashboard, reportes, ecommerce
 
 # Configuración del Logging
 settings.log_path  # asegura creación del directorio logs/
@@ -26,16 +27,19 @@ logger = logging.getLogger("app.main")
 async def lifespan(app: FastAPI):
     """Ciclo de vida de la aplicación: inicializa y libera recursos."""
     logger.info("Iniciando aplicación de Marroquinería...")
+    settings.upload_path  # asegura creación de app/static/uploads/
     try:
         init_db_pool()
+        iniciar_scheduler()
     except Exception as e:
         logger.warning(
-            "No se pudo conectar a la base de datos al iniciar (%s). "
+            "No se pudo conectar a la base de datos o iniciar scheduler (%s). "
             "Asegúrese de configurar el archivo .env correctamente.",
             e
         )
     yield
     logger.info("Apagando aplicación de Marroquinería...")
+    detener_scheduler()
     close_db_pool()
 
 
@@ -69,9 +73,10 @@ app.include_router(ventas.router)
 app.include_router(compras.router)
 app.include_router(devoluciones.router)
 app.include_router(reportes.router)
+app.include_router(ecommerce.router)
 
 
-# Redirección de la raíz al Dashboard
+# Redirección de la raíz a la Tienda Pública
 @app.get("/", include_in_schema=False)
 def root():
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/tienda")

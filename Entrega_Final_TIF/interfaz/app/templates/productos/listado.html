@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Productos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Acción -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-box-seam text-primary me-2"></i>Catálogo de Productos</h3>
+            <p class="text-secondary mb-0">Gestión de artículos principales, costos, precios y control de variantes</p>
+        </div>
+        <a href="/productos/nuevo" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+        </a>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/productos" class="row g-2 align-items-center">
+                <!-- Buscador por texto -->
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Buscar por SKU, nombre o descripción..." value="{{ search or '' }}">
+                    </div>
+                </div>
+
+                <!-- Filtro por Categoría -->
+                <div class="col-md-3">
+                    <select name="id_categoria" class="form-select">
+                        <option value="">Todas las Categorías</option>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.id_categoria }}" {% if selected_categoria == cat.id_categoria %}selected{% endif %}>
+                            {{ cat.nombre_categoria }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro por Material -->
+                <div class="col-md-3">
+                    <select name="id_material" class="form-select">
+                        <option value="">Todos los Materiales</option>
+                        {% for mat in materiales %}
+                        <option value="{{ mat.id_material }}" {% if selected_material == mat.id_material %}selected{% endif %}>
+                            {{ mat.nombre_material }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="col-auto d-flex gap-1">
+                    <button type="submit" class="btn btn-secondary">Filtrar</button>
+                    {% if search or selected_categoria or selected_material %}
+                    <a href="/productos" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+
+                <div class="col text-end text-muted small">
+                    Total: <strong>{{ total }}</strong> productos
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Productos -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">ID</th>
+                        <th style="width: 110px;">SKU</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Material</th>
+                        <th class="text-end">P. Costo</th>
+                        <th class="text-end">P. Lista</th>
+                        <th class="text-center">Variantes</th>
+                        <th class="text-center">Stock Total</th>
+                        <th class="text-end" style="width: 170px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted fw-semibold">#{{ item.id_producto }}</td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border font-monospace">
+                                {{ item.sku or 'S/D' }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/productos/{{ item.id_producto }}" class="fw-bold text-decoration-none">
+                                {{ item.nombre_producto }}
+                            </a>
+                            {% if item.descripcion %}
+                            <div class="text-muted small text-truncate" style="max-width: 250px;">
+                                {{ item.descripcion }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+                                {{ item.nombre_categoria }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+                                {{ item.nombre_material }}
+                            </span>
+                        </td>
+                        <td class="text-end text-muted">${{ "%.2f"|format(item.precio_costo) }}</td>
+                        <td class="text-end fw-bold text-success">${{ "%.2f"|format(item.precio_lista) }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info-subtle text-info-emphasis border px-2 py-1">
+                                {{ item.total_variantes }} var.
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.stock_total <= 0 %}
+                            <span class="badge bg-danger px-2 py-1">Sin Stock</span>
+                            {% elif item.stock_total <= 5 %}
+                            <span class="badge bg-warning px-2 py-1">{{ item.stock_total }} u.</span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success-emphasis border px-2 py-1">{{ item.stock_total }} u.</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="/productos/{{ item.id_producto }}" class="btn btn-sm btn-outline-info me-1" title="Ver detalle y variantes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/productos/{{ item.id_producto }}/editar" class="btn btn-sm btn-outline-primary me-1" title="Editar producto">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteProducto({{ item.id_producto }}, '{{ item.nombre_producto | e }}')" 
+                                    title="Eliminar producto">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-box2 fs-2 d-block mb-2"></i>
+                            No se encontraron productos con los criterios seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_categoria %}&id_categoria={{ selected_categoria }}{% endif %}{% if selected_material %}&id_material={{ selected_material }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}{% if selected_categoria %}&id_categoria={{ selected_categoria }}{% endif %}{% if selected_material %}&id_material={{ selected_material }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_categoria %}&id_categoria={{ selected_categoria }}{% endif %}{% if selected_material %}&id_material={{ selected_material }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function deleteProducto(id, nombre) {
+    confirmModal(
+        'Eliminar Producto',
+        `¿Está seguro de que desea eliminar el producto "${nombre}" y todas sus variantes? Esta acción no se puede deshacer.`,
+        async () => {
+            try {
+                const res = await fetch(`/productos/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar el producto.');
+
+                window.location.href = '/productos?msg=' + encodeURIComponent('Producto eliminado exitosamente.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}

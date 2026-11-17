@@ -1,0 +1,224 @@
+{% extends "tienda/base_tienda.html" %}
+
+{% block title %}{{ producto.nombre_producto }}{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/tienda" class="text-decoration-none text-muted">Tienda</a></li>
+            <li class="breadcrumb-item"><a href="/tienda?categoria={{ producto.id_categoria }}" class="text-decoration-none text-muted">{{ producto.nombre_categoria }}</a></li>
+            <li class="breadcrumb-item active text-dark" aria-current="page">{{ producto.nombre_producto }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- Columna Izquierda: Galería de Fotos -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white p-3">
+                <div class="main-image-container position-relative bg-light rounded-3 d-flex align-items-center justify-content-center" style="min-height: 420px; max-height: 520px; overflow: hidden;">
+                    {% if producto.imagenes and producto.imagenes|length > 0 %}
+                    <img id="main-product-img" src="{{ producto.imagenes[0].url_imagen }}" alt="{{ producto.nombre_producto }}" class="img-fluid" style="object-fit: contain; max-height: 500px; width: 100%;">
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-bag-check fs-1 text-secondary opacity-50"></i>
+                        <p class="mt-2 mb-0">Foto del producto en preparación</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Miniaturas si hay más de 1 imagen -->
+                {% if producto.imagenes and producto.imagenes|length > 1 %}
+                <div class="d-flex gap-2 mt-3 overflow-auto pb-2">
+                    {% for img in producto.imagenes %}
+                    <button type="button" class="btn p-0 border rounded-2 overflow-hidden thumb-btn {% if loop.first %}border-dark border-2{% endif %}" onclick="changeMainImage('{{ img.url_imagen }}', this)" style="width: 70px; height: 70px; flex-shrink: 0;">
+                        <img src="{{ img.url_imagen }}" alt="Miniatura" class="w-100 h-100" style="object-fit: cover;">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Detalles, Variantes, Precios y Compra -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <span class="badge bg-secondary-subtle text-secondary-emphasis border mb-2 align-self-start">{{ producto.nombre_categoria }} &bull; {{ producto.nombre_material }}</span>
+                <h3 class="fw-bold text-dark mb-1">{{ producto.nombre_producto }}</h3>
+                {% if producto.sku %}
+                <small class="text-muted d-block mb-3">SKU: {{ producto.sku }}</small>
+                {% endif %}
+
+                <!-- Cuadro de Precios Promocionales -->
+                <div class="bg-light p-3 rounded-3 my-3 border">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-muted small">Precio de Lista (Tarjetas / Mercado Pago):</span>
+                        <span class="price-web-old fw-semibold">${{ "{:,.2f}".format(producto.precios.precio_lista_web) }}</span>
+                    </div>
+                    <div class="d-flex align-items-baseline justify-content-between">
+                        <div>
+                            <span class="price-transfer">${{ "{:,.2f}".format(producto.precios.precio_transferencia) }}</span>
+                            <span class="badge-discount ms-1">20% OFF</span>
+                        </div>
+                        <span class="text-success small fw-semibold">Ahorrás ${{ "{:,.2f}".format(producto.precios.ahorro_transferencia) }}</span>
+                    </div>
+                    <div class="text-muted mt-2 small" style="font-size: 0.78rem;">
+                        <i class="bi bi-info-circle text-primary me-1"></i> El 20% de descuento se aplica automáticamente abonando por transferencia bancaria.
+                    </div>
+                </div>
+
+                {% if producto.descripcion %}
+                <div class="mb-4">
+                    <h6 class="fw-semibold text-dark">Descripción</h6>
+                    <p class="text-secondary small mb-0">{{ producto.descripcion }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Selección de Variantes -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-uppercase text-secondary">Elegí Color y Tamaño:</label>
+                    <div class="row g-2" id="variantes-container">
+                        {% for v in producto.variantes %}
+                        <div class="col-6">
+                            <input type="radio" class="btn-check variant-radio" name="selected_variante" 
+                                   id="var-{{ v.id_variante }}" value="{{ v.id_variante }}"
+                                   data-stock="{{ v.stock_actual }}"
+                                   data-color="{{ v.nombre_color }}"
+                                   data-tamano="{{ v.nombre_tamano }}"
+                                   {% if v.stock_actual <= 0 %}disabled{% endif %}
+                                   {% if loop.first and v.stock_actual > 0 %}checked{% endif %}>
+                            <label class="btn btn-outline-secondary text-start w-100 p-2 rounded-3 variant-label {% if v.stock_actual <= 0 %}opacity-50 text-decoration-line-through{% endif %}" for="var-{{ v.id_variante }}">
+                                <div class="fw-semibold small text-truncate">{{ v.nombre_color }}</div>
+                                <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 0.75rem;">
+                                    <span>Talle: {{ v.nombre_tamano }}</span>
+                                    {% if v.stock_actual > 0 %}
+                                    <span class="text-success fw-bold">{{ v.stock_actual }} disp.</span>
+                                    {% else %}
+                                    <span class="text-danger fw-bold">Sin stock</span>
+                                    {% endif %}
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Selector de Cantidad y Botón Comprar -->
+                <div class="row g-2 align-items-center mb-3">
+                    <div class="col-4">
+                        <label class="form-label small text-muted mb-1">Cantidad:</label>
+                        <div class="input-group input-group-sm">
+                            <button class="btn btn-outline-secondary" type="button" onclick="adjustQty(-1)">-</button>
+                            <input type="number" id="input-cantidad" class="form-control text-center fw-bold" value="1" min="1" max="10">
+                            <button class="btn btn-outline-secondary" type="button" onclick="adjustQty(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="col-8 pt-3">
+                        <button type="button" id="btn-add-cart" class="btn btn-brand w-100 py-2 rounded-pill shadow-sm" onclick="addToCart()">
+                            <i class="bi bi-bag-plus me-1"></i> Agregar al Carrito
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cart-alert-success" class="alert alert-success py-2 px-3 small rounded-3 d-none align-items-center justify-content-between shadow-sm">
+                    <span><i class="bi bi-check-circle-fill me-1"></i> ¡Artículo agregado al carrito!</span>
+                    <a href="/tienda/carrito" class="btn btn-sm btn-dark rounded-pill py-0 px-2 fw-semibold">Ver carrito</a>
+                </div>
+
+                <!-- Garantías de Envío y Retiro en Paraná -->
+                <div class="border-top pt-3 mt-2 text-secondary small">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-truck fs-5 text-primary"></i>
+                        <span>Envíos rápidos con <strong>Moto Uber</strong> en toda Paraná.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check fs-5 text-success"></i>
+                        <span>Garantía de calidad artesanal y cambio directo.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const productoData = {
+        id_producto: {{ producto.id_producto }},
+        nombre_producto: "{{ producto.nombre_producto | replace('"', '\\"') }}",
+        precio_base: {{ producto.precios.precio_base }},
+        precio_lista_web: {{ producto.precios.precio_lista_web }},
+        precio_transferencia: {{ producto.precios.precio_transferencia }},
+        imagen: "{{ producto.imagenes[0].url_imagen if producto.imagenes else '' }}"
+    };
+
+    function changeMainImage(url, btn) {
+        document.getElementById('main-product-img').src = url;
+        document.querySelectorAll('.thumb-btn').forEach(b => b.classList.remove('border-dark', 'border-2'));
+        btn.classList.add('border-dark', 'border-2');
+    }
+
+    function adjustQty(delta) {
+        const input = document.getElementById('input-cantidad');
+        let current = parseInt(input.value) || 1;
+        current = Math.max(1, current + delta);
+        input.value = current;
+    }
+
+    function addToCart() {
+        const selectedRadio = document.querySelector('input[name="selected_variante"]:checked');
+        if (!selectedRadio) {
+            alert('Por favor elegí una combinación de color y talle disponible.');
+            return;
+        }
+
+        const idVariante = parseInt(selectedRadio.value);
+        const stockDisp = parseInt(selectedRadio.dataset.stock);
+        const color = selectedRadio.dataset.color;
+        const tamano = selectedRadio.dataset.tamano;
+        const cantidad = parseInt(document.getElementById('input-cantidad').value) || 1;
+
+        if (cantidad > stockDisp) {
+            alert(`Solo hay ${stockDisp} unidad(es) disponible(s) en este momento.`);
+            return;
+        }
+
+        let cart = getCart();
+        const existingIdx = cart.findIndex(it => it.id_variante === idVariante);
+
+        if (existingIdx > -1) {
+            if (cart[existingIdx].cantidad + cantidad > stockDisp) {
+                alert(`No podés agregar más de ${stockDisp} unidades disponibles de esta variante.`);
+                return;
+            }
+            cart[existingIdx].cantidad += cantidad;
+        } else {
+            cart.push({
+                id_variante: idVariante,
+                id_producto: productoData.id_producto,
+                nombre_producto: productoData.nombre_producto,
+                color: color,
+                tamano: tamano,
+                precio_lista_web: productoData.precio_lista_web,
+                precio_transferencia: productoData.precio_transferencia,
+                imagen: productoData.imagen,
+                stock_disponible: stockDisp,
+                cantidad: cantidad
+            });
+        }
+
+        saveCart(cart);
+
+        // Feedback
+        const alertBox = document.getElementById('cart-alert-success');
+        alertBox.classList.remove('d-none');
+        alertBox.classList.add('d-flex');
+        setTimeout(() => {
+            alertBox.classList.remove('d-flex');
+            alertBox.classList.add('d-none');
+        }, 5000);
+    }
+</script>
+{% endblock %}

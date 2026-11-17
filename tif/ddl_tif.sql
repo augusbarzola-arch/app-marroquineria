@@ -1,5 +1,6 @@
 
 -- DDL - CREACIÓN DE TABLAS
+-- Sistema de Gestión Comercial - Marroquinería
 
 
 DROP TABLE IF EXISTS devolucion CASCADE;
@@ -35,7 +36,7 @@ CREATE TABLE color (
     nombre_color VARCHAR(30) NOT NULL UNIQUE
 );
 
--- 4. TAMAÑO
+-- 4. TAMANO (sin ñ, unificado en todo el proyecto)
 CREATE TABLE tamano (
     id_tamano SERIAL PRIMARY KEY,
     nombre_tamano VARCHAR(20) NOT NULL UNIQUE
@@ -88,7 +89,7 @@ CREATE TABLE venta (
     id_medio_pago INT NOT NULL REFERENCES medio_pago(id_medio_pago)
 );
 
--- 10. DETALLE_VENTA
+-- 10. DETALLE_VENTA (entidad débil)
 CREATE TABLE detalle_venta (
     id_venta INT NOT NULL REFERENCES venta(id_venta) ON DELETE CASCADE,
     renglon_venta INT NOT NULL,
@@ -106,7 +107,7 @@ CREATE TABLE compra (
     id_proveedor INT NOT NULL REFERENCES proveedor(id_proveedor)
 );
 
--- 12. DETALLE_COMPRA
+-- 12. DETALLE_COMPRA (entidad débil)
 CREATE TABLE detalle_compra (
     id_compra INT NOT NULL REFERENCES compra(id_compra) ON DELETE CASCADE,
     renglon_compra INT NOT NULL,
@@ -127,33 +128,110 @@ CREATE TABLE devolucion (
     id_variante_nueva INT REFERENCES variante_producto(id_variante),
     monto_diferencia DECIMAL(10,2) DEFAULT 0,
     observaciones VARCHAR(255),
-    -- Nueva FK compuesta: asegura que la devolución sea de un ítem de esa venta
-    FOREIGN KEY (id_venta, renglon_venta) REFERENCES detalle_venta(id_venta, renglon_venta),
-    -- Check para asegurar que si es CAMBIO, haya variante nueva (y viceversa)
+    -- FK compuesta: garantiza que la devolución sea de un ítem de esa venta
+    FOREIGN KEY (id_venta, renglon_venta)
+        REFERENCES detalle_venta(id_venta, renglon_venta)
+        ON DELETE CASCADE,
+    -- CHECK: si es CAMBIO debe haber variante nueva; si no, no debe haber
     CONSTRAINT chk_cambio CHECK ((motivo = 'CAMBIO') = (id_variante_nueva IS NOT NULL))
 );
 
--- TRIGGERS PARA ACTUALIZAR STOCK AUTOMÁTICAMENTE
-CREATE OR REPLACE FUNCTION actualizar_stock_venta() RETURNS TRIGGER AS $$
+-- ============================================================
+-- TRIGGERS PARA MANTENER EL STOCK AUTOMÁTICAMENTE
+-- ============================================================
+
+-- VENTA: al insertar renglón, descuenta stock
+CREATE OR REPLACE FUNCTION fn_venta_stock_ins() RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE variante_producto 
-    SET stock_actual = stock_actual - NEW.cantidad
-    WHERE id_variante = NEW.id_variante;
+    UPDATE variante_producto
+       SET stock_actual = stock_actual - NEW.cantidad
+     WHERE id_variante = NEW.id_variante;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_venta_stock AFTER INSERT ON detalle_venta
-FOR EACH ROW EXECUTE FUNCTION actualizar_stock_venta();
+CREATE TRIGGER trg_venta_stock_ins
+AFTER INSERT ON detalle_venta
+FOR EACH ROW EXECUTE FUNCTION fn_venta_stock_ins();
 
-CREATE OR REPLACE FUNCTION actualizar_stock_compra() RETURNS TRIGGER AS $$
+-- VENTA: al eliminar renglón, devuelve stock
+CREATE OR REPLACE FUNCTION fn_venta_stock_del() RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE variante_producto 
-    SET stock_actual = stock_actual + NEW.cantidad
-    WHERE id_variante = NEW.id_variante;
+    UPDATE variante_producto
+       SET stock_actual = stock_actual + OLD.cantidad
+     WHERE id_variante = OLD.id_variante;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_venta_stock_del
+AFTER DELETE ON detalle_venta
+FOR EACH ROW EXECUTE FUNCTION fn_venta_stock_del();
+
+-- COMPRA: al insertar renglón, suma stock
+CREATE OR REPLACE FUNCTION fn_compra_stock_ins() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE variante_producto
+       SET stock_actual = stock_actual + NEW.cantidad
+     WHERE id_variante = NEW.id_variante;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_compra_stock AFTER INSERT ON detalle_compra
-FOR EACH ROW EXECUTE FUNCTION actualizar_stock_compra();
+CREATE TRIGGER trg_compra_stock_ins
+AFTER INSERT ON detalle_compra
+FOR EACH ROW EXECUTE FUNCTION fn_compra_stock_ins();
+
+-- COMPRA: al eliminar renglón, descuenta stock
+CREATE OR REPLACE FUNCTION fn_compra_stock_del() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE variante_producto
+       SET stock_actual = stock_actual - OLD.cantidad
+     WHERE id_variante = OLD.id_variante;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_compra_stock_del
+AFTER DELETE ON detalle_compra
+FOR EACH ROW EXECUTE FUNCTION fn_compra_stock_del();
+
+-- DEVOLUCION: al insertar, ajusta stock según el motivo
+--   DEVOLUCION: +cantidad al stock de la variante original
+--   CAMBIO:     +cantidad a la variante original y -cantidad a la variante nueva
+--   REPARACION: sin cambio (el ítem vuelve al local luego de repararse)
+CREATE OR REPLACE FUNCTION fn_devolucion_stock_ins() RETURNS TRIGGER AS $$
+DECLARE
+    v_variante_original INT;
+BEGIN
+    -- Obtener la variante original desde el renglón de venta
+    SELECT id_variante
+      INTO v_variante_original
+      FROM detalle_venta
+     WHERE id_venta = NEW.id_venta
+       AND renglon_venta = NEW.renglon_venta;
+
+    IF NEW.motivo = 'DEVOLUCION' THEN
+        UPDATE variante_producto
+           SET stock_actual = stock_actual + NEW.cantidad
+         WHERE id_variante = v_variante_original;
+
+    ELSIF NEW.motivo = 'CAMBIO' THEN
+        -- El ítem devuelto vuelve al stock
+        UPDATE variante_producto
+           SET stock_actual = stock_actual + NEW.cantidad
+         WHERE id_variante = v_variante_original;
+        -- El ítem nuevo sale del stock
+        UPDATE variante_producto
+           SET stock_actual = stock_actual - NEW.cantidad
+         WHERE id_variante = NEW.id_variante_nueva;
+    END IF;
+    -- REPARACION: no modifica stock
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_devolucion_stock_ins
+AFTER INSERT ON devolucion
+FOR EACH ROW EXECUTE FUNCTION fn_devolucion_stock_ins();

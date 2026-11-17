@@ -19,6 +19,7 @@ from app.repositories.categoria_repo import CategoriaRepository
 from app.repositories.material_repo import MaterialRepository
 from app.repositories.color_repo import ColorRepository
 from app.repositories.tamano_repo import TamanoRepository
+from app.repositories.ecommerce_repo import EcommerceRepository
 from app.services.producto_service import ProductoService
 
 router = APIRouter(tags=["Gestión de Productos"])
@@ -125,6 +126,8 @@ def detalle_producto(request: Request, id_producto: int):
 
     colores = ColorRepository.get_all()
     tamanos = TamanoRepository.get_all()
+    prod_web = EcommerceRepository.get_producto_detalle(id_producto)
+    imagenes = prod_web.get("imagenes", []) if prod_web else []
 
     return templates.TemplateResponse(
         "productos/detalle.html",
@@ -137,6 +140,7 @@ def detalle_producto(request: Request, id_producto: int):
             "total_variantes": detalle["total_variantes"],
             "colores": colores,
             "tamanos": tamanos,
+            "imagenes": imagenes,
             "active_menu": "productos",
         }
     )

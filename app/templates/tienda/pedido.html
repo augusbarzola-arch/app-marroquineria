@@ -1,0 +1,253 @@
+{% extends "tienda/base_tienda.html" %}
+
+{% block title %}Pedido {{ pedido.codigo_seguimiento }}{% endblock %}
+
+{% block content %}
+<div class="container py-3" style="max-width: 850px;">
+    <!-- Encabezado del Pedido -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pb-3 border-bottom">
+            <div>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis border mb-1">Orden de Compra Web</span>
+                <h4 class="fw-bold mb-0 text-dark">{{ pedido.codigo_seguimiento }}</h4>
+                <small class="text-muted">Fecha: {{ pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <div>
+                {% if pedido.estado == 'PAGADO' %}
+                <span class="badge bg-success-subtle text-success-emphasis border border-success fs-6 px-3 py-2 rounded-pill">
+                    <i class="bi bi-check-circle-fill me-1"></i> PAGO CONFIRMADO
+                </span>
+                {% elif pedido.estado == 'ENVIADO' %}
+                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary fs-6 px-3 py-2 rounded-pill">
+                    <i class="bi bi-truck me-1"></i> EN CAMINO CON MOTO UBER
+                </span>
+                {% elif pedido.estado == 'CANCELADO' %}
+                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger fs-6 px-3 py-2 rounded-pill">
+                    <i class="bi bi-x-circle-fill me-1"></i> PEDIDO CANCELADO
+                </span>
+                {% else %}
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning fs-6 px-3 py-2 rounded-pill">
+                    <i class="bi bi-clock-history me-1"></i> PENDIENTE DE PAGO
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Instrucciones si es Transferencia Bancaria -->
+        {% if pedido.metodo_pago == 'TRANSFERENCIA' %}
+            {% if pedido.estado == 'PENDIENTE_PAGO' %}
+            <div class="mt-4 p-4 rounded-3 border border-success bg-success-subtle bg-opacity-25">
+                <h5 class="fw-bold text-success mb-2"><i class="bi bi-bank me-2"></i>Datos para Transferir (20% OFF Aplicado)</h5>
+                <p class="small text-secondary mb-3">
+                    Por favor transferí el monto exacto antes del vencimiento. Tu pedido quedará reservado durante <strong>24 horas</strong>.
+                </p>
+
+                <div class="row g-3 bg-white p-3 rounded-3 border mb-3">
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Alias CBU:</small>
+                        <strong class="fs-6 text-dark user-select-all">{{ bank_alias }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">CBU:</small>
+                        <strong class="fs-6 text-dark user-select-all">{{ bank_cbu }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Titular:</small>
+                        <span class="fw-semibold text-dark">{{ bank_titular }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Banco:</small>
+                        <span class="fw-semibold text-dark">{{ bank_banco }}</span>
+                    </div>
+                    <div class="col-12 border-top pt-2 mt-2">
+                        <small class="text-muted d-block">Monto Total a Transferir:</small>
+                        <strong class="fs-4 text-success">${{ "{:,.2f}".format(pedido.total) }}</strong>
+                    </div>
+                </div>
+
+                <!-- Envío de Comprobante: WhatsApp (Prioritario) o Web -->
+                <div class="border-top pt-3">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-send-check me-1"></i>Paso final: Envianos el comprobante de pago</h6>
+                    <p class="small text-secondary mb-3">
+                        Para que podamos verificar la acreditación bancaria y despachar tu pedido lo antes posible, envianos la captura de la transferencia por WhatsApp:
+                    </p>
+
+                    <div class="d-grid gap-2 mb-4">
+                        <a href="{{ whatsapp_url }}" target="_blank" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="bi bi-whatsapp fs-4"></i>
+                            <span>Enviar Comprobante por WhatsApp</span>
+                        </a>
+                        <small class="text-center text-muted">Se abrirá WhatsApp con el número de pedido <strong>#{{ pedido.codigo_seguimiento }}</strong> y el monto exacto ya completados.</small>
+                    </div>
+
+                    <!-- Opción secundaria: Subir comprobante en la web -->
+                    <div class="p-3 bg-white rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-1 small"><i class="bi bi-cloud-arrow-up me-1"></i>O si preferís, adjuntalo directamente desde aquí:</h6>
+                        <small class="text-muted d-block mb-2">Subí la captura o PDF del comprobante:</small>
+
+                        {% if pedido.comprobante_url %}
+                        <div class="alert alert-info d-flex align-items-center justify-content-between p-3 rounded-3 mb-2">
+                            <div>
+                                <i class="bi bi-file-earmark-check-fill me-2 fs-5"></i>
+                                <span class="fw-semibold">¡Comprobante adjuntado con éxito!</span>
+                                <span class="d-block small text-muted">Estamos verificando la acreditación en nuestra cuenta bancaria.</span>
+                            </div>
+                            <a href="{{ pedido.comprobante_url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">Ver Comprobante</a>
+                        </div>
+                        {% endif %}
+
+                        <form id="form-upload-comprobante" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+                            <div class="input-group">
+                                <input type="file" id="comprobante-file" class="form-control form-control-sm" accept="image/*,.pdf" required>
+                                <button class="btn btn-dark btn-sm" type="submit" id="btn-subir-comp">
+                                    <i class="bi bi-upload me-1"></i> Subir Comprobante
+                                </button>
+                            </div>
+                            <div id="upload-status" class="small mt-1 d-none"></div>
+                        </form>
+                    </div>
+
+                    <!-- Aviso de seguridad y verificación -->
+                    <div class="alert alert-light border small text-muted mt-3 mb-0">
+                        <i class="bi bi-shield-check text-success me-1 fs-6"></i>
+                        <strong>Aviso de seguridad y despacho:</strong> Por política de la empresa, nuestro equipo valida la acreditación efectiva en la cuenta bancaria antes de empaquetar y entregar a la moto. Los envíos se coordinan en franja de 14:00 a 18:00 hs.
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-success mt-4 p-3 rounded-3">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>¡Pago aprobado!</strong> Tu transferencia bancaria fue validada y tu pedido ya está siendo preparado para entrega con Moto Uber.
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Si pagó con Mercado Pago -->
+            {% if pedido.estado == 'PAGADO' %}
+            <div class="alert alert-success mt-4 p-3 rounded-3">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>¡Pago recibido vía Mercado Pago!</strong> Tu compra fue acreditada y ya está en preparación para envío inmediato.
+            </div>
+            {% else %}
+            <div class="alert alert-warning mt-4 p-3 rounded-3">
+                <i class="bi bi-clock-history me-2"></i>
+                Estamos aguardando la confirmación de la pasarela de Mercado Pago. Si tu pago ya se acreditó, se actualizará automáticamente en unos instantes.
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Resumen de Ítems y Envío -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <h5 class="fw-bold mb-3">Detalle de la Compra</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Artículo</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-end">Precio Unit.</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="small">
+                    {% for it in pedido.detalles %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if it.imagen_url %}
+                                <img src="{{ it.imagen_url }}" class="rounded border" style="width: 45px; height: 45px; object-fit: cover;">
+                                {% endif %}
+                                <div>
+                                    <strong class="d-block text-dark">{{ it.nombre_producto }}</strong>
+                                    <span class="text-muted">{{ it.nombre_color }} &bull; Talle: {{ it.nombre_tamano }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center fw-semibold">{{ it.cantidad }}</td>
+                        <td class="text-end">${{ "{:,.2f}".format(it.precio_unitario_cobrado) }}</td>
+                        <td class="text-end fw-bold">${{ "{:,.2f}".format(it.subtotal) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="small">
+                    <tr>
+                        <td colspan="3" class="text-end text-muted">Subtotal:</td>
+                        <td class="text-end fw-semibold">${{ "{:,.2f}".format(pedido.subtotal) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end text-muted">Envío (Zona {{ pedido.zona_envio }} - Moto Uber):</td>
+                        <td class="text-end fw-semibold">
+                            {% if pedido.costo_envio == 0 %}
+                            <span class="badge bg-success">¡GRATIS!</span>
+                            {% else %}
+                            ${{ "{:,.2f}".format(pedido.costo_envio) }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="fs-6 border-top">
+                        <td colspan="3" class="text-end fw-bold">TOTAL:</td>
+                        <td class="text-end fw-bold text-success">${{ "{:,.2f}".format(pedido.total) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Datos de Entrega -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-danger"></i>Destino de Entrega (Paraná)</h5>
+        <div class="row g-2 small text-secondary">
+            <div class="col-md-6"><strong>Destinatario:</strong> {{ pedido.nombre_cliente }}</div>
+            <div class="col-md-6"><strong>Teléfono / WhatsApp:</strong> {{ pedido.telefono_cliente }}</div>
+            <div class="col-md-6"><strong>Dirección:</strong> {{ pedido.direccion_envio }}</div>
+            <div class="col-md-6"><strong>Zona de Paraná:</strong> {{ pedido.zona_envio }}</div>
+            {% if pedido.observaciones %}
+            <div class="col-12 mt-2"><strong>Aclaraciones para la moto:</strong> {{ pedido.observaciones }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const formUpload = document.getElementById('form-upload-comprobante');
+    if (formUpload) {
+        formUpload.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('comprobante-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Selecciona un archivo de imagen o PDF de tu comprobante.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-subir-comp');
+            const statusBox = document.getElementById('upload-status');
+            btn.disabled = true;
+            statusBox.className = 'small mt-1 text-muted';
+            statusBox.innerText = 'Subiendo comprobante...';
+            statusBox.classList.remove('d-none');
+
+            const formData = new FormData();
+            formData.append('comprobante', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/api/tienda/pedidos/{{ pedido.codigo_seguimiento }}/comprobante', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Error al subir el comprobante.');
+
+                statusBox.className = 'small mt-1 text-success fw-bold';
+                statusBox.innerText = '¡Comprobante subido con éxito! Recargando página...';
+                setTimeout(() => window.location.reload(), 1200);
+            } catch (err) {
+                statusBox.className = 'small mt-1 text-danger fw-bold';
+                statusBox.innerText = 'Error: ' + err.message;
+                btn.disabled = false;
+            }
+        });
+    }
+</script>
+{% endblock %}

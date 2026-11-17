@@ -1,6 +1,32 @@
 SET client_encoding TO 'UTF8';
 BEGIN;
 
+-- ============================================================
+-- Limpieza previa (permite re-ejecutar el script)
+-- ============================================================
+TRUNCATE TABLE devolucion, detalle_venta, detalle_compra, venta, compra,
+               variante_producto, producto, color, tamano, categoria,
+               material, proveedor, medio_pago
+RESTART IDENTITY CASCADE;
+
+-- ============================================================
+-- Deshabilitar triggers de stock durante la carga masiva.
+--
+-- Motivo: la columna stock_actual de esta carga representa el
+-- stock CONSOLIDADO al momento del snapshot. Las tablas de
+-- detalle (venta/compra/devolucion) son trazas históricas para
+-- auditoría y reportes. Los triggers de stock aplican desde la
+-- primera operación NUEVA luego de esta carga.
+--
+-- Sin esta deshabilitación, el CHECK (stock_actual >= 0) falla
+-- porque las ventas (que descuentan) se insertan antes que las
+-- compras (que reponen).
+-- ============================================================
+ALTER TABLE detalle_venta    DISABLE TRIGGER trg_venta_stock_ins;
+ALTER TABLE detalle_venta    DISABLE TRIGGER trg_venta_stock_del;
+ALTER TABLE detalle_compra   DISABLE TRIGGER trg_compra_stock_ins;
+ALTER TABLE detalle_compra   DISABLE TRIGGER trg_compra_stock_del;
+ALTER TABLE devolucion       DISABLE TRIGGER trg_devolucion_stock_ins;
 INSERT INTO CATEGORIA (id_categoria, nombre_categoria, descripcion) VALUES
 (1, 'Bolsos', 'Cat de Bolsos'),
 (2, 'Mochilas', 'Cat de Mochilas'),
@@ -3515,4 +3541,47 @@ INSERT INTO DEVOLUCION (id_devolucion, fecha, id_venta, renglon_venta, cantidad,
 (40, '2026-10-25 15:31:00', 883, 2177, 2, 'REPARACION', NULL, 0.0, 'Gen auto'),
 (41, '2026-10-28 10:58:00', 888, 2190, 1, 'REPARACION', NULL, 0.0, 'Gen auto');
 
+-- ============================================================
+-- Re-habilitar triggers de stock para operaciones futuras
+-- ============================================================
+ALTER TABLE detalle_venta    ENABLE TRIGGER trg_venta_stock_ins;
+ALTER TABLE detalle_venta    ENABLE TRIGGER trg_venta_stock_del;
+ALTER TABLE detalle_compra   ENABLE TRIGGER trg_compra_stock_ins;
+ALTER TABLE detalle_compra   ENABLE TRIGGER trg_compra_stock_del;
+ALTER TABLE devolucion       ENABLE TRIGGER trg_devolucion_stock_ins;
+
+-- ============================================================
+-- Ajuste de secuencias (CRÍTICO: sin esto, el próximo INSERT
+-- con SERIAL intentará usar id=1 y fallará por duplicado)
+-- ============================================================
+SELECT setval(pg_get_serial_sequence('categoria',         'id_categoria'),  (SELECT MAX(id_categoria)         FROM categoria));
+SELECT setval(pg_get_serial_sequence('material',          'id_material'),   (SELECT MAX(id_material)          FROM material));
+SELECT setval(pg_get_serial_sequence('color',             'id_color'),      (SELECT MAX(id_color)             FROM color));
+SELECT setval(pg_get_serial_sequence('tamano',            'id_tamano'),     (SELECT MAX(id_tamano)            FROM tamano));
+SELECT setval(pg_get_serial_sequence('producto',          'id_producto'),   (SELECT MAX(id_producto)          FROM producto));
+SELECT setval(pg_get_serial_sequence('variante_producto', 'id_variante'),   (SELECT MAX(id_variante)          FROM variante_producto));
+SELECT setval(pg_get_serial_sequence('proveedor',         'id_proveedor'),  (SELECT MAX(id_proveedor)         FROM proveedor));
+SELECT setval(pg_get_serial_sequence('medio_pago',        'id_medio_pago'), (SELECT MAX(id_medio_pago)        FROM medio_pago));
+SELECT setval(pg_get_serial_sequence('venta',             'id_venta'),      (SELECT MAX(id_venta)             FROM venta));
+SELECT setval(pg_get_serial_sequence('compra',            'id_compra'),     (SELECT MAX(id_compra)            FROM compra));
+SELECT setval(pg_get_serial_sequence('devolucion',        'id_devolucion'), (SELECT MAX(id_devolucion)        FROM devolucion));
+
 COMMIT;
+
+-- Sanity check: los triggers siguen activos
+SELECT tgname, tgrelid::regclass AS tabla, tgenabled
+FROM pg_trigger
+WHERE tgname LIKE 'trg_%_stock_%'
+ORDER BY tgname;
+-- Esperado: 5 filas con tgenabled = 'O' (origin)
+
+-- Test rápido: insertar una venta y ver cómo baja el stock
+BEGIN;
+INSERT INTO venta (fecha_hora, monto_total, id_medio_pago)
+VALUES (CURRENT_TIMESTAMP, 10000, 1) RETURNING id_venta;
+-- supongamos que devuelve id 902
+INSERT INTO detalle_venta (id_venta, renglon_venta, cantidad, precio_unitario_cobrado, id_variante)
+VALUES (902, 2223, 1, 10000, 1);
+SELECT id_variante, stock_actual FROM variante_producto WHERE id_variante = 1;
+-- stock debe haber bajado 1 respecto al valor cargado
+ROLLBACK;

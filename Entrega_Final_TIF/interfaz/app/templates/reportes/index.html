@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes y Estadísticas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-bar-chart-line text-primary me-2"></i>Reportes del Negocio</h3>
+            <p class="text-secondary mb-0">Informes analíticos de ventas, compras, devoluciones e inventario con exportación en CSV y PDF</p>
+        </div>
+    </div>
+
+    <!-- Pestañas de Navegación entre Reportes -->
+    <ul class="nav nav-pills mb-4 flex-wrap gap-1 p-2 rounded border" style="background: var(--bg-surface);">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'ventas_fechas' %}active{% endif %}" href="/reportes?tab=ventas_fechas">
+                <i class="bi bi-calendar-range me-1"></i> Ventas por Fecha
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'top_productos' %}active{% endif %}" href="/reportes?tab=top_productos">
+                <i class="bi bi-trophy me-1"></i> Top 10 Productos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'medios_pago' %}active{% endif %}" href="/reportes?tab=medios_pago">
+                <i class="bi bi-credit-card me-1"></i> Por Medio de Pago
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'compras_proveedor' %}active{% endif %}" href="/reportes?tab=compras_proveedor">
+                <i class="bi bi-truck me-1"></i> Compras por Proveedor
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'devoluciones_motivo' %}active{% endif %}" href="/reportes?tab=devoluciones_motivo">
+                <i class="bi bi-arrow-left-right me-1"></i> Devoluciones
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'stock_valorizado' %}active{% endif %}" href="/reportes?tab=stock_valorizado">
+                <i class="bi bi-currency-dollar me-1"></i> Stock Valorizado
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'stock_bajo' %}active{% endif %}" href="/reportes?tab=stock_bajo">
+                <i class="bi bi-exclamation-triangle me-1"></i> Stock Bajo
+            </a>
+        </li>
+    </ul>
+
+    <!-- Panel del Reporte Seleccionado -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <h5 class="fw-bold mb-0 text-primary">{{ titulo }}</h5>
+                    {% if info_resumen %}
+                    <small class="text-secondary fw-semibold">{{ info_resumen }}</small>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de Exportación -->
+                <div class="col-md-6 text-md-end d-flex justify-content-md-end gap-2">
+                    <a href="/reportes/export/csv?tipo={{ active_tab }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" 
+                       class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
+                    </a>
+                    <a href="/reportes/export/pdf?tipo={{ active_tab }}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" 
+                       class="btn btn-outline-danger btn-sm" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros de Fecha (para reportes que admiten rango temporal) -->
+        {% if active_tab in ['ventas_fechas', 'top_productos', 'medios_pago', 'compras_proveedor', 'devoluciones_motivo'] %}
+        <div class="card-body py-3 border-bottom">
+            <form method="GET" action="/reportes" class="row g-2 align-items-center">
+                <input type="hidden" name="tab" value="{{ active_tab }}">
+                
+                <div class="col-auto">
+                    <label class="form-label small mb-0 fw-semibold">Desde:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ fecha_desde or '' }}">
+                </div>
+
+                <div class="col-auto">
+                    <label class="form-label small mb-0 fw-semibold">Hasta:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ fecha_hasta or '' }}">
+                </div>
+
+                <div class="col-auto d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-funnel me-1"></i> Aplicar Filtro
+                    </button>
+                    {% if fecha_desde or fecha_hasta %}
+                    <a href="/reportes?tab={{ active_tab }}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Tabla de Datos del Reporte -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        {% for col in columnas %}
+                        <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                    <tr>
+                        {% for celda in fila %}
+                        <td>{{ celda }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{{ columnas|length }}" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            No se encontraron registros para los parámetros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

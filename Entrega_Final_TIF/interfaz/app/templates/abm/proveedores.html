@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado y Botón Nuevo -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-building text-primary me-2"></i>Gestión de Proveedores</h3>
+            <p class="text-secondary mb-0">Directorio de proveedores para el registro de órdenes de compra</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo Proveedor
+        </button>
+    </div>
+
+    <!-- Buscador -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="/proveedores" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control" placeholder="Buscar por CUIT, razón social o email..." value="{{ search or '' }}">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-secondary">Buscar</button>
+                    {% if search %}
+                    <a href="/proveedores" class="btn btn-outline-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+                <div class="col text-end text-muted small">
+                    Total: <strong>{{ total }}</strong> registros
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Proveedores -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>CUIT</th>
+                        <th>Razón Social</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th class="text-end" style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted fw-semibold">#{{ item.id_proveedor }}</td>
+                        <td><code class="fw-bold">{{ item.cuit }}</code></td>
+                        <td class="fw-bold">{{ item.razon_social }}</td>
+                        <td>{{ item.telefono or '-' }}</td>
+                        <td>
+                            {% if item.email %}
+                            <a href="mailto:{{ item.email }}" class="text-decoration-none">{{ item.email }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openEditModal({{ item.id_proveedor }}, '{{ item.cuit | e }}', '{{ item.razon_social | e }}', '{{ (item.telefono or '') | e }}', '{{ (item.email or '') | e }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteItem({{ item.id_proveedor }}, '{{ item.razon_social | e }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No se encontraron proveedores registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Página {{ current_page }} de {{ total_pages }}</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}">Siguiente</a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Alta -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createForm" onsubmit="handleCreate(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nuevo Proveedor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">CUIT <span class="text-danger">*</span></label>
+                        <input type="text" name="cuit" class="form-control" required maxlength="20" placeholder="Ej: 30-71123456-8">
+                        <div class="form-text">Debe ser único en el sistema.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Razón Social <span class="text-danger">*</span></label>
+                        <input type="text" name="razon_social" class="form-control" required maxlength="100" placeholder="Ej: Taller Marroquí S.A.">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control" maxlength="30" placeholder="Ej: 1140001111">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control" maxlength="100" placeholder="contacto@empresa.com">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveCreate">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edición -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm" onsubmit="handleUpdate(event)">
+                <input type="hidden" name="id_proveedor" id="edit_id_proveedor">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Editar Proveedor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">CUIT <span class="text-danger">*</span></label>
+                        <input type="text" name="cuit" id="edit_cuit" class="form-control" required maxlength="20">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Razón Social <span class="text-danger">*</span></label>
+                        <input type="text" name="razon_social" id="edit_razon_social" class="form-control" required maxlength="100">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Teléfono</label>
+                            <input type="text" name="telefono" id="edit_telefono" class="form-control" maxlength="30">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" id="edit_email" class="form-control" maxlength="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveEdit">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+async function handleCreate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('btnSaveCreate');
+    btn.disabled = true;
+
+    const data = {
+        cuit: form.cuit.value.trim(),
+        razon_social: form.razon_social.value.trim(),
+        telefono: form.telefono.value.trim() || null,
+        email: form.email.value.trim() || null
+    };
+
+    try {
+        const res = await fetch('/proveedores', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al crear el proveedor.');
+
+        window.location.href = '/proveedores?msg=' + encodeURIComponent('Proveedor creado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function openEditModal(id, cuit, razon, tel, email) {
+    document.getElementById('edit_id_proveedor').value = id;
+    document.getElementById('edit_cuit').value = cuit;
+    document.getElementById('edit_razon_social').value = razon;
+    document.getElementById('edit_telefono').value = tel || '';
+    document.getElementById('edit_email').value = email || '';
+    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+}
+
+async function handleUpdate(e) {
+    e.preventDefault();
+    const form = e.target;
+    const id = form.id_proveedor.value;
+    const btn = document.getElementById('btnSaveEdit');
+    btn.disabled = true;
+
+    const data = {
+        cuit: form.cuit.value.trim(),
+        razon_social: form.razon_social.value.trim(),
+        telefono: form.telefono.value.trim() || null,
+        email: form.email.value.trim() || null
+    };
+
+    try {
+        const res = await fetch(`/proveedores/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Error al actualizar el proveedor.');
+
+        window.location.href = '/proveedores?msg=' + encodeURIComponent('Proveedor actualizado correctamente.') + '&msg_type=success';
+    } catch (err) {
+        showToast(err.message, 'danger');
+        btn.disabled = false;
+    }
+}
+
+function deleteItem(id, razon) {
+    confirmModal(
+        'Eliminar Proveedor',
+        `¿Está seguro de que desea eliminar al proveedor "${razon}"?`,
+        async () => {
+            try {
+                const res = await fetch(`/proveedores/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.detail || 'No se pudo eliminar el registro.');
+
+                window.location.href = '/proveedores?msg=' + encodeURIComponent('Proveedor eliminado con éxito.') + '&msg_type=success';
+            } catch (err) {
+                showToast(err.message, 'danger');
+            }
+        }
+    );
+}
+</script>
+{% endblock %}
