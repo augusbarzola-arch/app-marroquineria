@@ -80,3 +80,32 @@ app.include_router(ecommerce.router)
 @app.get("/", include_in_schema=False)
 def root():
     return RedirectResponse(url="/tienda")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Manejo de errores para mostrar detalles técnicos en caso de fallo."""
+    import traceback
+    logger.exception("Error procesando solicitud en %s: %s", request.url.path, exc)
+    from fastapi.responses import HTMLResponse
+    tb = traceback.format_exc()
+    return HTMLResponse(
+        content=f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="utf-8"><title>Error del Servidor</title></head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f7fafc; padding: 40px 20px;">
+            <div style="max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #e53e3e;">
+                <h3 style="color: #9b2c2c; margin-top: 0;">Error interno en el servidor (500)</h3>
+                <p><strong>Ruta:</strong> <code>{request.url.path}</code></p>
+                <p><strong>Mensaje:</strong> <span style="color: #c53030; font-weight: 600;">{str(exc)}</span></p>
+                <details style="margin-top: 20px;" open>
+                    <summary style="cursor: pointer; color: #4a5568; font-weight: 500;">Detalle técnico (Traceback):</summary>
+                    <pre style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin-top: 10px; line-height: 1.4;">{tb}</pre>
+                </details>
+            </div>
+        </body>
+        </html>
+        """,
+        status_code=500
+    )

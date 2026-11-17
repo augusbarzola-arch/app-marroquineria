@@ -41,10 +41,18 @@ def init_db_pool() -> pool.ThreadedConnectionPool:
         try:
             logger.info("Inicializando ThreadedConnectionPool a PostgreSQL...")
             if settings.DATABASE_URL:
+                dsn = settings.DATABASE_URL.strip()
+                if dsn.startswith("postgres://"):
+                    dsn = dsn.replace("postgres://", "postgresql://", 1)
+                if "sslmode=" not in dsn and "localhost" not in dsn and "127.0.0.1" not in dsn:
+                    sep = "&" if "?" in dsn else "?"
+                    dsn = f"{dsn}{sep}sslmode=require"
+                host_info = dsn.split("@")[-1].split("/")[0] if "@" in dsn else "configurado"
+                logger.info("Conectando con DATABASE_URL a %s...", host_info)
                 _pool = pool.ThreadedConnectionPool(
                     minconn=settings.DB_MIN_CONN,
                     maxconn=settings.DB_MAX_CONN,
-                    dsn=settings.DATABASE_URL
+                    dsn=dsn
                 )
             else:
                 _pool = pool.ThreadedConnectionPool(
