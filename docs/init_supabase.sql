@@ -52,6 +52,7 @@ CREATE TABLE tamano (
 -- 5. PRODUCTO
 CREATE TABLE producto (
     id_producto SERIAL PRIMARY KEY,
+    sku VARCHAR(50),
     nombre_producto VARCHAR(100) NOT NULL,
     descripcion VARCHAR(255),
     precio_costo DECIMAL(10,2) NOT NULL CHECK (precio_costo >= 0),
