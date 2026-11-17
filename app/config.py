@@ -1,5 +1,6 @@
 import os
 from decimal import Decimal
+from typing import Optional
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
