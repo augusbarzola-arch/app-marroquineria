@@ -487,3 +487,32 @@ SELECT setval(pg_get_serial_sequence('venta', 'id_venta'), (SELECT MAX(id_venta)
 SELECT setval(pg_get_serial_sequence('compra', 'id_compra'), (SELECT MAX(id_compra) FROM compra));
 SELECT setval(pg_get_serial_sequence('devolucion', 'id_devolucion'), (SELECT MAX(id_devolucion) FROM devolucion));
 
+
+-- ============================================================================
+-- SEGURIDAD SUPABASE (LINTER Y ASESOR DE SEGURIDAD)
+-- ============================================================================
+-- 1. Habilitar Row Level Security (RLS) en todas las tablas públicas
+ALTER TABLE public.producto ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detalle_venta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.venta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.variante_producto ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.color ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tamano ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categoria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.devolucion ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detalle_compra ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compra ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proveedor ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.producto_imagen ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pedido_web ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mp_webhook_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.material ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medio_pago ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.detalle_pedido_web ENABLE ROW LEVEL SECURITY;
+
+-- 2. Fijar search_path inmutable para funciones PL/pgSQL
+ALTER FUNCTION public.fn_venta_stock_ins() SET search_path = public;
+ALTER FUNCTION public.fn_venta_stock_del() SET search_path = public;
+ALTER FUNCTION public.fn_compra_stock_ins() SET search_path = public;
+ALTER FUNCTION public.fn_compra_stock_del() SET search_path = public;
+ALTER FUNCTION public.fn_devolucion_stock_ins() SET search_path = public;
