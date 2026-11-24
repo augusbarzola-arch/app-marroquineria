@@ -516,3 +516,37 @@ ALTER FUNCTION public.fn_venta_stock_del() SET search_path = public;
 ALTER FUNCTION public.fn_compra_stock_ins() SET search_path = public;
 ALTER FUNCTION public.fn_compra_stock_del() SET search_path = public;
 ALTER FUNCTION public.fn_devolucion_stock_ins() SET search_path = public;
+
+-- 3. Índices en Claves Foráneas para optimización de JOINs y performance
+CREATE INDEX IF NOT EXISTS idx_compra_id_proveedor ON public.compra(id_proveedor);
+CREATE INDEX IF NOT EXISTS idx_detalle_compra_id_variante ON public.detalle_compra(id_variante);
+CREATE INDEX IF NOT EXISTS idx_detalle_venta_id_variante ON public.detalle_venta(id_variante);
+CREATE INDEX IF NOT EXISTS idx_devolucion_id_variante_nueva ON public.devolucion(id_variante_nueva);
+CREATE INDEX IF NOT EXISTS idx_devolucion_id_venta_renglon ON public.devolucion(id_venta, renglon_venta);
+CREATE INDEX IF NOT EXISTS idx_producto_id_categoria ON public.producto(id_categoria);
+CREATE INDEX IF NOT EXISTS idx_producto_id_material ON public.producto(id_material);
+CREATE INDEX IF NOT EXISTS idx_variante_producto_id_color ON public.variante_producto(id_color);
+CREATE INDEX IF NOT EXISTS idx_variante_producto_id_tamano ON public.variante_producto(id_tamano);
+CREATE INDEX IF NOT EXISTS idx_venta_id_medio_pago ON public.venta(id_medio_pago);
+
+-- 4. Políticas RLS
+-- Catálogo público (lectura permitida)
+CREATE POLICY public_read ON public.categoria FOR SELECT USING (true);
+CREATE POLICY public_read ON public.color FOR SELECT USING (true);
+CREATE POLICY public_read ON public.material FOR SELECT USING (true);
+CREATE POLICY public_read ON public.tamano FOR SELECT USING (true);
+CREATE POLICY public_read ON public.producto FOR SELECT USING (true);
+CREATE POLICY public_read ON public.variante_producto FOR SELECT USING (true);
+CREATE POLICY public_read ON public.producto_imagen FOR SELECT USING (true);
+CREATE POLICY public_read ON public.medio_pago FOR SELECT USING (true);
+
+-- Tablas privadas (acceso total a backend service_role)
+CREATE POLICY service_role_access ON public.compra FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.detalle_compra FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.venta FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.detalle_venta FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.devolucion FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.proveedor FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.pedido_web FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.detalle_pedido_web FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_access ON public.mp_webhook_log FOR ALL TO service_role USING (true) WITH CHECK (true);
